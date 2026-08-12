@@ -96,6 +96,8 @@ templates/              bundled voice-profile defaults
 
 The router pattern (a thin `SKILL.md` pointing to `reference/*.md`, plus a hooks and pin layer) is adapted from a design already running in production elsewhere, applied here to keep this skill's own context footprint small.
 
+Working on clearfelt itself, rather than using it: see [docs/DEVELOP.md](docs/DEVELOP.md). The writing style it enforces, as a standalone reference: [docs/STYLE.md](docs/STYLE.md). Why the repo is shaped the way it is: [docs/decisions/](docs/decisions/).
+
 ## Evidence base
 
 The rule dictionary draws on documented AI-writing-tell research and patterns observed and cataloged across the open-source anti-slop community, not just this project's own opinion. If you've seen a pattern repeatedly and it isn't here yet, see [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -113,6 +115,10 @@ clearfelt exists because of a wave of prior work in this space. Worth checking o
 - [no-ai-slop](https://github.com/petergyang/no-ai-slop)
 - [humanizer](https://github.com/brandonwise/humanizer)
 - [stop-slop](https://github.com/hardikpandya/stop-slop)
+
+## Author
+
+Built by [Andrei Nita](https://andreinita.co/). [LinkedIn](https://www.linkedin.com/in/nitaionutandrei/).
 
 ## License
 
