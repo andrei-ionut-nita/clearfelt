@@ -2,8 +2,8 @@
 
 Marketing-flavored words that inflate a claim without adding information, from anti-slop-slop-canon's banlist.
 
-- game-changer | severity: 7 | tier: 1
-- seamless | severity: 6 | tier: 2
-- robust | severity: 4 | tier: 3
-- unlock | severity: 5 | tier: 2
-- in conclusion | severity: 7 | tier: 1
+- game-changer | severity: 7 | tier: 1 | source: community:anti-slop-slop-canon
+- seamless | severity: 6 | tier: 2 | source: community:anti-slop-slop-canon
+- robust | severity: 4 | tier: 3 | source: community:anti-slop-slop-canon
+- unlock | severity: 5 | tier: 2 | source: community:anti-slop-slop-canon
+- in conclusion | severity: 7 | tier: 1 | source: community:anti-slop-slop-canon

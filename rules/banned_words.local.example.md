@@ -16,9 +16,11 @@ Add one word per line under the matching heading, in this shape:
 
 If you're not sure, use `severity: 5` and `tier: 2`.
 
+A `source:` field is optional here, unlike in the shared `rules/` files, since this is your own personal list. `source: personal` or leaving it off is fine.
+
 ## High-Frequency AI Lexicon
 
-- synergy | severity: 6 | tier: 2
+- synergy | severity: 6 | tier: 2 | source: personal
 
 ## Puffery Lexicon
 

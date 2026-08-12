@@ -238,7 +238,14 @@ function findHits(text, rules, config, overrides) {
     }
 
     for (const occ of occurrences) {
-      hits.push({ category: rule.category, pattern: rule.pattern, severity: rule.severity, tier: rule.tier, ...occ });
+      hits.push({
+        category: rule.category,
+        pattern: rule.pattern,
+        severity: rule.severity,
+        tier: rule.tier,
+        source: rule.source ?? 'unattributed',
+        ...occ,
+      });
     }
   }
   return hits;

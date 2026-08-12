@@ -33,3 +33,7 @@ A voice profile always wins. If `.clearfelt/voice-profile.md` says you like a wo
 ## No fabrication
 
 The rewrite pass never invents a fact, name, date, or citation that wasn't already in the source. Tightening vague language is fine. Inventing a specific to replace vague language is not, even if the result reads better. See [decisions/0004-no-fabrication-and-voice-precedence.md](decisions/0004-no-fabrication-and-voice-precedence.md).
+
+## Where this comes from
+
+None of the above is arbitrary. [RESEARCH.md](RESEARCH.md) has the underlying findings (burstiness, lexical diversity, certainty markers, and more), and every rule bullet in `rules/` carries a `source:` key resolved in [SOURCES.md](SOURCES.md). If you're skeptical that a flagged word or phrase actually matters, that's the right instinct: go check the source instead of taking clearfelt's word for it.

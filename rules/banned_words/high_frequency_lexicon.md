@@ -4,12 +4,17 @@ Single words that show up in AI-generated text far more often than in ordinary h
 
 Tier 1 always flags a hit. Tier 2 only flags when it appears clustered with other hits nearby. Tier 3 only flags once it's dense enough across the whole document to be a real pattern rather than a one-off legitimate use.
 
-- delve | severity: 8 | tier: 1
-- tapestry | severity: 7 | tier: 1
-- pivotal | severity: 5 | tier: 2
-- paramount | severity: 6 | tier: 2
-- revolutionize | severity: 6 | tier: 2
-- navigate | severity: 4 | tier: 3
-- testament | severity: 6 | tier: 2
-- underscore | severity: 5 | tier: 3
-- holistic | severity: 5 | tier: 2
+- delve | severity: 8 | tier: 1 | source: community:no-ai-slop
+- tapestry | severity: 7 | tier: 1 | source: community:no-ai-slop
+- pivotal | severity: 5 | tier: 2 | source: community:no-ai-slop
+- paramount | severity: 6 | tier: 2 | source: community:no-ai-slop
+- revolutionize | severity: 6 | tier: 2 | source: community:no-ai-slop
+- navigate | severity: 4 | tier: 3 | source: community:no-ai-slop
+- testament | severity: 6 | tier: 2 | source: community:no-ai-slop
+- underscore | severity: 5 | tier: 3 | source: community:no-ai-slop
+- holistic | severity: 5 | tier: 2 | source: community:no-ai-slop
+- camaraderie | severity: 6 | tier: 2 | source: unresolved-carnegie-mellon-pnas-2025
+- palpable | severity: 6 | tier: 2 | source: unresolved-carnegie-mellon-pnas-2025
+- intricate | severity: 5 | tier: 3 | source: unresolved-carnegie-mellon-pnas-2025
+- furthermore | severity: 5 | tier: 2 | source: research-synthesis-2026
+- leverage | severity: 5 | tier: 3 | source: research-synthesis-2026

@@ -100,7 +100,7 @@ Working on clearfelt itself, rather than using it: see [docs/DEVELOP.md](docs/DE
 
 ## Evidence base
 
-The rule dictionary draws on documented AI-writing-tell research and patterns observed and cataloged across the open-source anti-slop community, not just this project's own opinion. If you've seen a pattern repeatedly and it isn't here yet, see [CONTRIBUTING.md](CONTRIBUTING.md).
+Every rule in `rules/` carries a `source:` field. Run `/clearfelt audit` and the score report includes a source key for each hit; look it up in [docs/SOURCES.md](docs/SOURCES.md) for the actual paper, institutional report, or community tool it came from. [docs/RESEARCH.md](docs/RESEARCH.md) has the condensed synthesis of what the underlying research actually found. Nothing is cited without a checkable trail: claims that came up in research but couldn't be traced to a real paper are labeled `unresolved-*` rather than given a made-up citation. If you've seen a pattern repeatedly and it isn't here yet, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Author
 

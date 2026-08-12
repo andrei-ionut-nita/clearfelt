@@ -10,7 +10,7 @@ One user-invocable skill, `clearfelt`, with three commands underneath it (`audit
 - `reference/audit.md`, `reference/humanize.md`, `reference/setup.md`, `reference/hooks.md`: full behavior per command, loaded on demand.
 - `scripts/detect.mjs`: the actual scoring engine. Zero external dependencies, Node stdlib only, on purpose (see [docs/decisions/0001](docs/decisions/0001-deterministic-scored-detection.md)). Never add an npm dependency to this script.
 - `scripts/hook.mjs`, `scripts/pin.mjs`: hook admin/runtime and shortcut-skill creation, adapted from the `impeccable` skill's equivalent scripts.
-- `rules/antipatterns/*.md`, `rules/banned_words/*.md`: the rule dictionary, one small file per category. `rules/*.local.example.md`: templates for personal, gitignored overrides.
+- `rules/antipatterns/*.md`, `rules/banned_words/*.md`: the rule dictionary, one small file per category. `rules/*.local.example.md`: templates for personal, gitignored overrides. Every bullet in the shared files carries a `source:` key resolved in `docs/SOURCES.md` (see [docs/decisions/0005](docs/decisions/0005-sourced-rules.md)). Never add a shared rule without one.
 - `clearfelt.config.md`: every tunable, one Markdown file. Never introduce a second place to configure the same setting.
 - `prompts/audit_loop.xml`: the 3-pass rewrite pipeline. The one non-Markdown file in the repo, deliberately (see [docs/decisions/0003](docs/decisions/0003-xml-pipeline-format.md)).
 
@@ -29,3 +29,5 @@ One user-invocable skill, `clearfelt`, with three commands underneath it (`audit
 - The writing style the tool enforces: [docs/STYLE.md](docs/STYLE.md)
 - Why the repo is shaped the way it is: [docs/decisions/](docs/decisions/)
 - Cutting a release: [docs/RELEASE.md](docs/RELEASE.md)
+- What the underlying research actually found: [docs/RESEARCH.md](docs/RESEARCH.md)
+- The bibliography every rule's `source:` key resolves against: [docs/SOURCES.md](docs/SOURCES.md)

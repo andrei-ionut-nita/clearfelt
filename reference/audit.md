@@ -10,7 +10,8 @@ Read-only scan. Never edits the target.
    - The score, out of 100, labeled "Empathy Index".
    - Each hit grouped by category, with its line number and snippet.
    - The statistical breakdown (burstiness, vocabulary diversity, repetition) in one short line, not a full table, unless the user asks for detail.
-4. Do not edit the file. If the user wants it fixed, point them at `/clearfelt humanize`.
+4. Every hit carries a `source` key. Mention it briefly (e.g. "no-ai-slop pattern" or "camaraderie: flagged per research, unresolved citation, see docs/SOURCES.md") if the user asks why something was flagged, rather than presenting the rule as clearfelt's own unexplained opinion.
+5. Do not edit the file. If the user wants it fixed, point them at `/clearfelt humanize`.
 
 ## Empathy Index formula
 
