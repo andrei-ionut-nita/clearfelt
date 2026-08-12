@@ -102,20 +102,6 @@ Working on clearfelt itself, rather than using it: see [docs/DEVELOP.md](docs/DE
 
 The rule dictionary draws on documented AI-writing-tell research and patterns observed and cataloged across the open-source anti-slop community, not just this project's own opinion. If you've seen a pattern repeatedly and it isn't here yet, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Inspired by
-
-clearfelt exists because of a wave of prior work in this space. Worth checking out:
-
-- [useantislop.com](https://useantislop.com)
-- [anti-ai-slop-writing](https://github.com/jalaalrd/anti-ai-slop-writing)
-- [slop-cop](https://github.com/awnist/slop-cop)
-- [anti-slop-slop-canon](https://github.com/codeSTACKr/anti-slop-slop-canon)
-- [humanizer](https://github.com/blader/humanizer)
-- [anti-slop-writing](https://github.com/coderjatin/anti-slop-writing)
-- [no-ai-slop](https://github.com/petergyang/no-ai-slop)
-- [humanizer](https://github.com/brandonwise/humanizer)
-- [stop-slop](https://github.com/hardikpandya/stop-slop)
-
 ## Author
 
 Built by [Andrei Nita](https://andreinita.co/). [LinkedIn](https://www.linkedin.com/in/nitaionutandrei/).
