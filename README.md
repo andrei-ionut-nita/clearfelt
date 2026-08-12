@@ -96,7 +96,7 @@ templates/              bundled voice-profile defaults
 
 The router pattern (a thin `SKILL.md` pointing to `reference/*.md`, plus a hooks and pin layer) is adapted from a design already running in production elsewhere, applied here to keep this skill's own context footprint small.
 
-Working on clearfelt itself, rather than using it: see [docs/DEVELOP.md](docs/DEVELOP.md). The writing style it enforces, as a standalone reference: [docs/STYLE.md](docs/STYLE.md). Why the repo is shaped the way it is: [docs/decisions/](docs/decisions/).
+Working on clearfelt itself, rather than using it: see [docs/DEVELOP.md](docs/DEVELOP.md). The writing style it enforces, as a standalone reference: [docs/STYLE.md](docs/STYLE.md). Why the repo is shaped the way it is: [docs/decisions/](docs/decisions/). Cutting a release: [docs/RELEASE.md](docs/RELEASE.md).
 
 ## Evidence base
 
