@@ -4,6 +4,24 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-08-12
+
+### Added
+
+- `docs/SOURCES.md`: bibliography for the rule dictionary, in three tiers: academic and institutional sources with real URLs, community prior-art tools credited by name, and an honest "referenced but unresolved" table for claims that came up in research but couldn't be traced to an actual paper.
+- `docs/RESEARCH.md`: condensed synthesis of the human-vs-AI-text research behind the rule dictionary.
+- `docs/decisions/0005-sourced-rules.md`: the ADR for requiring a disclosed source on every rule.
+- `docs/DEVELOP.md`, `docs/STYLE.md`, `docs/RELEASE.md`, and `CLAUDE.md`: development, style, release-process, and Claude-session-orientation docs.
+- Five research-sourced lexicon entries: `camaraderie`, `palpable`, `intricate`, `furthermore`, `leverage`.
+
+### Changed
+
+- Every bullet in `rules/antipatterns/*.md` and `rules/banned_words/*.md` now carries a `source:` field resolved against `docs/SOURCES.md`. `rules/*.local.example.md` templates document the field for personal overrides (optional there).
+- `scripts/detect.mjs` passes the `source` field through into every hit in `--mode report` output.
+- `CONTRIBUTING.md` now requires a real `source:` key on any new shared rule, with `clearfelt-heuristic` and `unresolved-*` as the honest fallbacks instead of a fabricated citation.
+- README's "Evidence base" section points at the actual bibliography instead of making an unlinked claim.
+- LICENSE and README author attribution corrected.
+
 ## [0.1.0] - 2026-08-12
 
 ### Added

@@ -1,6 +1,6 @@
 ---
 name: clearfelt
-version: 0.1.0
+version: 0.1.1
 description: Strip clinical AI writing patterns ("slop") out of text and rewrite it with human warmth. Use when the user asks to check text for AI tells, score how "AI-sounding" a draft is, humanize a document, remove corporate/robotic phrasing, or set up a personal writing voice profile. Covers commands "/clearfelt audit", "/clearfelt humanize", and "/clearfelt setup".
 license: MIT
 ---
