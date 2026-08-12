@@ -9,10 +9,18 @@ Most anti-AI-slop tools work the same way: a big prompt tells the model what to 
 ## Quick start
 
 ```bash
+npx skills add andrei-ionut-nita/clearfelt
+```
+
+Uses the [skills CLI](https://github.com/vercel-labs/skills), which auto-detects Claude Code (and 70-plus other agents) and installs clearfelt into the right `skills/` directory for you. Add `-g` to install globally instead of per-project, or `-a claude-code` to target Claude Code specifically if you have more than one agent installed.
+
+Prefer to manage it yourself:
+
+```bash
 git clone <this-repo> ~/.claude/skills/clearfelt
 ```
 
-That's the whole install. `scripts/detect.mjs` has zero external dependencies, only Node's standard library, so nothing else to `npm install`.
+Either way, that's the whole install. `scripts/detect.mjs` has zero external dependencies, only Node's standard library, so nothing else to `npm install`.
 
 Then, in Claude Code, in any project:
 
