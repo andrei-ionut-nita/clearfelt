@@ -1,0 +1,39 @@
+<pipeline name="clearfelt-humanize">
+  <config>
+    Read empathy_threshold, max_iterations, and intensity from clearfelt.config.md.
+    Do not hardcode these values here; the config file is the single source of truth.
+  </config>
+
+  <pass id="1" name="extract_and_calibrate">
+    <goal>Establish what must be preserved before anything is rewritten.</goal>
+    <steps>
+      <step>Read the target file in full.</step>
+      <step>Extract the factual payload: claims, numbers, names, dates, quotes, and any citations present. These must survive every later pass unchanged. Do not add facts, names, dates, or citations that are not already in the source (no-fabrication rule).</step>
+      <step>Check for .clearfelt/voice-profile.md in the user's project. If present, read it and note preferred vocabulary, sentence rhythm notes, and non-negotiables. A voice-profile preference always overrides a default rule file entry for this run.</step>
+      <step>If no voice-profile.md exists, note that bundled defaults apply and continue without blocking; offer to run "/clearfelt setup" once, but do not require it.</step>
+      <step>Note the target's existing paragraph structure and approximate length, since intensity: conservative must preserve these.</step>
+    </steps>
+  </pass>
+
+  <pass id="2" name="scrub_slop">
+    <goal>Remove confirmed antipattern and banned-word hits, then apply warmth metrics.</goal>
+    <steps>
+      <step>Run: node scripts/detect.mjs --mode report &lt;path&gt;</step>
+      <step>For each reported hit, rewrite only that span. Do not touch spans that were not flagged.</step>
+      <step>Respect intensity from clearfelt.config.md: "conservative" keeps paragraph count, paragraph order, and approximate sentence count close to the original. "aggressive" additionally varies sentence length deliberately (mix short punchy sentences with longer ones), shifts detached phrasing toward collective pronouns ("we" instead of "the user"), and swaps rigid conjunctions for casual transitions ("Plus" instead of "Furthermore").</step>
+      <step>Apply contractions where natural (don't, you're, we'll) unless the voice profile says otherwise.</step>
+      <step>On a re-entry into this pass from the loop below, increase burstiness and structural variation further than the previous attempt, still bounded by the no-fabrication rule and voice-profile precedence.</step>
+    </steps>
+  </pass>
+
+  <pass id="3" name="warmth_evaluation">
+    <goal>Score the current draft and decide whether another scrub pass is needed.</goal>
+    <steps>
+      <step>Run: node scripts/detect.mjs --mode score &lt;path&gt;</step>
+      <step>Compare the returned score against empathy_threshold.</step>
+    </steps>
+    <loop condition="score &lt; empathy_threshold" target="pass2" max_iterations="max_iterations">
+      Re-run pass 2 with the "re-entry" instruction above. If max_iterations is reached without clearing the threshold, stop and report the final score honestly rather than looping forever.
+    </loop>
+  </pass>
+</pipeline>

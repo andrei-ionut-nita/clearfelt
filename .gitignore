@@ -1,0 +1,17 @@
+# Personal rule overrides (see rules/*.local.example.md)
+rules/antipatterns.local.md
+rules/banned_words.local.md
+
+# Per-project voice profile and other clearfelt state
+.clearfelt/
+
+# Machine-local Claude Code settings (hook installs live here)
+.claude/settings.local.json
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Editor/OS cruft
+.DS_Store
+*.swp
