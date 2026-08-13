@@ -1,0 +1,1 @@
+It is important to note that our new onboarding flow leverages best-in-class design principles to deliver a frictionless, hassle-free experience. This robust, holistic solution empowers users to seamlessly navigate every step. We are excited to unlock this new chapter and look forward to the remarkable things that lie ahead.

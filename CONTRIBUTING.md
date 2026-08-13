@@ -21,6 +21,8 @@ The rule dictionary drifts out of date as AI writing habits change, so keeping i
 
 If you just want to flag a word for yourself without proposing it for everyone, don't open a PR. Copy `rules/antipatterns.local.example.md` or `rules/banned_words.local.example.md` to the matching `.local.md` file in the same folder. Both are gitignored.
 
+`.clearfelt/voice-profile.md` (or `.clearfelt/voices/<name>.md` in multi-voice mode) and `.clearfelt/domain.md` are project-scoped, not shared rule files. They don't need a `source:` field and aren't PR material, same as the `.local.md` overrides above.
+
 ## Changing `scripts/detect.mjs`
 
 The script has zero external dependencies on purpose, so `git clone` is still the entire install. Any change should keep using Node's standard library only.

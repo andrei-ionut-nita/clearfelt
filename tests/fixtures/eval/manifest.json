@@ -1,0 +1,15 @@
+{
+  "note": "Machine-written eval manifest, not a hand-edited rule/config file (same exception as .clearfelt/baseline.json under CLAUDE.md's JSON rule). Each entry names a fixture, a human label (ai or human), and the score band a well-calibrated detector should land in. scripts/eval.mjs reports the pass rate; a low rate is a real finding about detection recall, not something to fix by loosening the bands.",
+  "fixtures": [
+    { "file": "ai-1.md", "label": "ai", "expectedMax": 70 },
+    { "file": "ai-2.md", "label": "ai", "expectedMax": 70 },
+    { "file": "ai-3.md", "label": "ai", "expectedMax": 70 },
+    { "file": "ai-4.md", "label": "ai", "expectedMax": 70 },
+    { "file": "ai-5.md", "label": "ai", "expectedMax": 70 },
+    { "file": "human-1.md", "label": "human", "expectedMin": 85 },
+    { "file": "human-2.md", "label": "human", "expectedMin": 85 },
+    { "file": "human-3.md", "label": "human", "expectedMin": 85 },
+    { "file": "human-4.md", "label": "human", "expectedMin": 85 },
+    { "file": "human-5.md", "label": "human", "expectedMin": 85 }
+  ]
+}

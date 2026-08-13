@@ -38,7 +38,6 @@ A rule bullet like `- delve | severity: 8 | tier: 1 | source: carnegie-mellon-20
 | `stanford-scale-gptzero-2025` | Assessing GPTZero's Accuracy in Identifying AI vs Human Written Essays | Stanford SCALE, 2025 | https://scale.stanford.edu/ai/repository/assessing-gptzeros-accuracy-identifying-ai-vs-human-written-essays |
 | `watermark-robust-2024` | Provably Robust Watermarks for Open-Source Language Models | IACR ePrint, 2024 | https://eprint.iacr.org/2024/1739 |
 | `fingerprinting-2025` | LLM Fingerprinting via Semantically Conditioned Watermarks | arXiv / OpenReview, 2025 | https://arxiv.org/html/2505.16723v3 |
-| `wikipedia-ai-signs` | Wikipedia: Signs of AI writing | Wikipedia, ongoing | https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing |
 | `mit-tech-review-2022` | How to spot AI-generated text | MIT Technology Review, 2022 | https://www.technologyreview.com/2022/12/19/1065596/how-to-spot-ai-generated-text/ |
 | `eyesift-2026` | AI Text Detection Signals 2026: Perplexity, Burstiness and... | EyeSift, 2026 | https://www.eyesift.com/ai-text-detection-stylometric-signals-2026-burstiness-perplexity-repetition-watermarks-fingerprints/ |
 | `pangram-2025` | Why Perplexity and Burstiness Fail to Detect AI | Pangram, 2025 | https://www.pangram.com/blog/why-perplexity-and-burstiness-fail-to-detect-ai |
@@ -46,6 +45,11 @@ A rule bullet like `- delve | severity: 8 | tier: 1 | source: carnegie-mellon-20
 | `groundy-2026` | Detecting AI Content in 2026: The Arms Race Nobody Is Winning | Groundy, 2026 | https://groundy.com/articles/detecting-ai-content-2026-arms-race-nobody/ |
 | `sandler-2024` | LIWC-22 comparison of human vs. ChatGPT dialogue | arXiv, 2024 | https://arxiv.org/html/2401.16587v2 |
 | `messingschlager-appel-2025` | LIWC comparison of human vs. LLM short stories | Humanities and Social Sciences Communications (Nature Portfolio), 2025 | https://www.nature.com/articles/s41599-025-06341-2 |
+| `flesch-1948` | A new readability yardstick | Journal of Applied Psychology, 32(3), 221-233, 1948 (DOI 10.1037/h0057532) | https://pubmed.ncbi.nlm.nih.gov/18867058/ |
+| `kincaid-1975` | Derivation of new readability formulas (Automated Readability Index, Fog Count, and Flesch Reading Ease Formula) for Navy enlisted personnel | Research Branch Report 8-75, Naval Air Station Memphis, 1975 | https://apps.dtic.mil/sti/html/tr/ADA006655/ |
+| `gunning-1952` | The Technique of Clear Writing (source of the Gunning Fog Index) | McGraw-Hill, 1952 | No free full text for the book itself; description verified via https://en.wikipedia.org/wiki/Gunning_fog_index |
+| `oppenheimer-2006` | Consequences of erudite vernacular utilized irrespective of necessity: problems with using long words needlessly | Applied Cognitive Psychology, 20, 139-156, 2006 | https://onlinelibrary.wiley.com/doi/abs/10.1002/acp.1178 |
+| `alter-oppenheimer-2009` | Uniting the tribes of fluency to form a metacognitive nation | Personality and Social Psychology Review, 13, 219-235, 2009 | https://journals.sagepub.com/doi/10.1177/1088868309341564 |
 
 ## Referenced but unresolved
 
@@ -76,6 +80,11 @@ Not academic research: pattern lists assembled by people building anti-AI-slop t
 | `community:anti-slop-slop-canon` | codeSTACKr's default-removed habits (game-changer, seamless, robust, delve, em dash, semicolon, exclamation points, rule of three, in conclusion) | https://github.com/codeSTACKr/anti-slop-slop-canon |
 | `community:brandonwise-humanizer` | brandonwise's tiered vocabulary and statistical-analysis design (burstiness, type-token ratio, trigram repetition), which shaped `scripts/detect.mjs`'s scoring approach | https://github.com/brandonwise/humanizer |
 | `community:blader-humanizer` | blader's no-fabrication rule and voice-sample-overrides-default-ban precedent, which shaped `reference/humanize.md`'s two hard rules | https://github.com/blader/humanizer |
+| `wikipedia-ai-signs` | Wikipedia's own "Signs of AI writing" essay, a crowd-maintained pattern list, not academic research; moved here from the academic table since it's the same kind of evidence as the other rows in this table | https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing |
+
+## A note on the readability rows
+
+The five readability/fluency citations above (`flesch-1948` through `alter-oppenheimer-2009`) were each independently verified for a real, resolvable URL before being added, not recalled from memory. Which formulas to report, and in what order, came from practitioner guidance (readabilityformulas.com, ckmtools.dev) layered on top of those primary sources; that guidance isn't itself a citation, it's editorial judgment about presentation, kept separate from the peer-reviewed formulas it's applied to. See [decisions/0008-readability-metrics.md](decisions/0008-readability-metrics.md) for why Kahneman's System 1/2 thinking was considered and rejected as a citation here: it's a psychological theory with no computable formula, and citing it would have meant attributing a claim to a framework the tool doesn't actually implement.
 
 ## How this list gets maintained
 

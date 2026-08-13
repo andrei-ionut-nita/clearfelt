@@ -8,3 +8,4 @@ Punctuation and layout habits, not word choices. Includes anti-slop-slop-canon's
 - "rule-of-three bullet lists" | severity: 5 | source: community:anti-slop-slop-canon
 - "paragraphs with identical sentence counts" | severity: 5 | source: clearfelt-heuristic
 - "bolded phrase every paragraph for emphasis" | severity: 4 | source: clearfelt-heuristic
+- "more than two bold, italic, or code spans in a single sentence" | severity: 4 | source: clearfelt-heuristic

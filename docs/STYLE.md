@@ -16,19 +16,32 @@ Use "don't," "you're," "we'll" where they're natural. Swap rigid conjunctions fo
 
 ## What gets flagged
 
-Five categories of phrase and structure, documented in full in `rules/antipatterns/` and `rules/banned_words/`:
+Seven categories of phrase and structure, documented in full in `rules/antipatterns/` and `rules/banned_words/`:
 
 - **Binary contrasts**: "It's not X. It's Y." False-choice drama around a claim that didn't need it.
+  Flagged: "It's not a tool. It's a revolution." Passes: "It's a genuinely useful tool."
 - **Fake-profound closers**: Sentences that reach for weight they haven't earned, usually the last line of a paragraph.
+  Flagged: "And that changes everything." Passes: "That's the part most teams skip."
 - **Throat-clearing openers**: Warm-up sentences that delay the point instead of starting with it.
+  Flagged: "In today's fast-paced world, it's important to note that..." Passes: leading with the actual claim.
 - **Weasel attribution**: Claims backed by an authority that's never named ("experts agree," "studies show").
+  Flagged: "Studies show this approach works." Passes: "We tried this on three teams and it held up."
 - **Structural tells**: Colon-reveal sentences, synonym cycling, and other shape-level habits, not individual words.
-- **Formatting tells**: Punctuation and layout habits, not word choice, including the em-dash-as-pause habit this project has zero tolerance for in its own writing.
-- **Lexicon**: Individual words that show up in AI-generated text far more than in ordinary writing (delve, tapestry, pivotal, and so on), plus marketing puffery (game-changer, seamless, robust).
+  Flagged: "Here's what nobody tells you: it's slower." Passes: "It's slower than the docs suggest."
+- **Formatting tells**: Punctuation and layout habits, not word choice, including the em-dash-as-pause habit this project has zero tolerance for in its own writing, and stacking more than two bold/italic/code spans into one sentence.
+  Flagged: "**This** is *not* just `important`, it's **essential**." Passes: plain prose, emphasis used once, when it matters.
+- **Frictionless claims**: Phrases that describe a result as costless, no admitted risk or contested choice behind it.
+  Flagged: "It just works, hassle-free, right out of the box." Passes: "It works, but the setup step trips people up."
+- **Lexicon**: Individual words that show up in AI-generated text far more than in ordinary writing (delve, tapestry, pivotal, and so on), marketing puffery (game-changer, seamless, robust), and vague abstractions that substitute for a concrete detail (significant, impactful, a number of).
+  Flagged: "This had a significant, impactful effect." Passes: "This cut onboarding time from nine days to two."
 
 ## What doesn't get flagged
 
 A voice profile always wins. If `.clearfelt/voice-profile.md` says you like a word or a construction the base rules would otherwise catch, `/clearfelt humanize` leaves it alone. This tool is trying to remove the tells that make writing sound like nobody in particular wrote it, not to erase what makes your writing sound like you.
+
+## Readability, tracked separately
+
+`/clearfelt audit` also reports Flesch Reading Ease, Flesch-Kincaid Grade Level, Gunning Fog, and two processing-fluency signals (passive-voice and nominalization density). This is a different axis from everything above: it measures whether a piece reads at the right level for its audience, not whether it sounds AI-generated. The two never get blended into one number. See "Readability" in `reference/audit.md` for the full breakdown and sourcing.
 
 ## No fabrication
 
