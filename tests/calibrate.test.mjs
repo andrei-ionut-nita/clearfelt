@@ -39,15 +39,24 @@ test('thin sample warns below the 300-word threshold', () => {
   assert.match(result.warning, /noisy/);
 });
 
+// The directory-mode tests below point at fixtures/calibrate-corpus/, a
+// subdirectory private to this file, rather than the shared fixtures/ root:
+// detect.test.mjs, explain.test.mjs, and rules.test.mjs all write and remove
+// their own temporary .md fixtures directly in fixtures/ root, and node
+// --test runs test files concurrently by default, so a directory-mode file
+// count taken there is racy against them (caught as a real intermittent
+// failure, not a hypothetical one). calibrate-corpus/ is only ever touched
+// by this file, so its listing is stable under concurrency without a lock.
+
 test('directory: pools every .md/.txt/.mdx file and reports the real file count', () => {
-  const result = run('.');
-  assert.ok(result.fileCount >= 2, 'fixtures directory has multiple scannable files');
+  const result = run('calibrate-corpus');
+  assert.ok(result.fileCount >= 2, 'calibrate-corpus/ has multiple scannable files');
   assert.ok(result.wordCount > 0);
 });
 
 test('a directory pooling more words than one file, in general, does not throw or return zero', () => {
   const single = run('human-sample.md');
-  const dir = run('.');
+  const dir = run('calibrate-corpus');
   assert.ok(dir.wordCount >= single.wordCount, 'pooling every fixture should not have fewer words than one fixture alone');
 });
 
@@ -90,11 +99,11 @@ test('-h (short flag) behaves identically to --help', () => {
 });
 
 test('directory mode: a non-.md/.txt/.mdx file at the top level is silently excluded, not counted or read', () => {
-  const baseline = run('.');
-  const jsonPath = join(FIXTURES, 'calibrate-non-scannable-test.json');
+  const baseline = run('calibrate-corpus');
+  const jsonPath = join(FIXTURES, 'calibrate-corpus', 'calibrate-non-scannable-test.json');
   writeFileSync(jsonPath, JSON.stringify({ this: 'must not be counted as a scannable file' }));
   try {
-    const withExtraFile = run('.');
+    const withExtraFile = run('calibrate-corpus');
     assert.equal(withExtraFile.fileCount, baseline.fileCount, 'a .json file must not be picked up by directory mode at all');
   } finally {
     rmSync(jsonPath);
@@ -114,7 +123,7 @@ test('a file with zero matched words (numbers/symbols only) reports wordCount 0,
 });
 
 test('a sample at or above the 300-word threshold reports no warning field at all', () => {
-  const result = run('.');
-  assert.ok(result.wordCount >= 300, 'the pooled fixtures directory must exceed the threshold for this test to mean anything');
+  const result = run('calibrate-corpus');
+  assert.ok(result.wordCount >= 300, 'the pooled calibrate-corpus/ directory must exceed the threshold for this test to mean anything');
   assert.equal('warning' in result, false);
 });

@@ -10,22 +10,22 @@ Most anti-AI-slop tools work the same way: a big prompt tells the model what to 
 
 - **Deterministic Human Score.** `scripts/detect.mjs` computes the score in code, reproducible by anyone, not estimated by an LLM.
 - **Sourced rule dictionary.** Every rule cites real research ([docs/SOURCES.md](docs/SOURCES.md)) or named prior art, nothing asserted without a disclosed origin. A handful of words carry an honestly-labeled `unresolved-*` source, a citation nobody could verify, and stay off by default rather than counting against your score; see `rules.include_unresolved` in `clearfelt.config.md`.
-- **Confirms before it writes anything.** `/clearfelt rewrite` shows a before/after and asks, it never silently overwrites your file.
+- **Confirms before it writes anything.** `/clearfelt rewrite` walks you through a before/after and asks first; it never silently overwrites your file.
 - **Multi-voice for teams.** One shared voice by default, or a separate profile per writer.
 - **Domain-aware, no false positives on real jargon.** `.clearfelt/domain.md` exempts legitimate technical terms a generic banlist would otherwise flag.
 - **Readability, tracked separately from AI-tell scoring.** Flesch-Kincaid, Gunning Fog, and processing-fluency signals, so audience-fit and slop-detection never get conflated into one blurry number. Calibrated for US-school-grade, English-language, general-audience text; not validated for other languages or specialist audiences, set your own range in `.clearfelt/domain.md` if that doesn't fit.
 - **Everything hand-editable, no JSON.** Rules, config, voice, and domain files are all plain Markdown.
-- **Baseline diffing, hooks, and pin shortcuts.** Built for repeated use on a growing set of drafts, not a one-off scan. Baseline diffing runs anywhere; the auto-audit hook and pin shortcuts are Claude Code-specific (see "Quick start").
+- **Baseline diffing, hooks, and pin shortcuts.** Built for repeated use on an expanding pile of drafts, not a one-off scan. Baseline diffing runs anywhere; the auto-audit hook and pin shortcuts only work in Claude Code (see "Quick start").
 - **Sorted, not dumped.** The score report leads with what actually drove the number, groups repeated hits into one row with an occurrence count, and shows category point subtotals sorted by impact, not a flat list in rule-file order.
-- **`/clearfelt write` for a blank page, not just an existing draft.** Turns a seed (a rough note, a paragraph pasted straight into the request) into a full first draft at a chosen length (short/medium/long), through a short interview, then scores and preservation-checks the result the same way `/clearfelt rewrite` does. Never overwrites the seed.
-- **Hard, checkable constraints, not just a hope the rewrite lands under a limit.** `--max-chars`/`--max-words`/`--must-contain`/`--must-not-contain` on `/clearfelt rewrite` or `/clearfelt write`, inline or as a reusable `.clearfelt/constraints/<name>.md` set, verified against the actual candidate text by `scripts/check.mjs`, not just prompt-instructed.
+- **`/clearfelt write` for a blank page, not just an existing draft.** Turns a seed (a rough note, a paragraph pasted directly into the request) into a full first draft at a chosen length (short, medium, or long), gathered through a quick interview, then runs the draft through the identical scoring and preservation-check pass `/clearfelt rewrite` uses. Never overwrites the seed.
+- **Hard, checkable constraints, not just a hope the rewrite lands under a limit.** `--max-chars`/`--max-words`/`--must-contain`/`--must-not-contain` on `/clearfelt rewrite` or `/clearfelt write`, inline or as a reusable `.clearfelt/constraints/<name>.md` set, verified by `scripts/check.mjs` against the candidate text it actually produced, no prompt-only promise involved.
 - **Locked spans.** Wrap any text in `<!-- clearfelt-lock -->` / `<!-- /clearfelt-lock -->` to keep it byte-identical through every rewrite intensity, for a verbatim quote or a legal boilerplate footer without marking the whole project sensitive.
 - **Personal calibration.** `scripts/calibrate.mjs`, run automatically by `/clearfelt setup` when you hand it a writing sample or a folder of past writing, measures your own natural sentence-length variance, paragraph-length variance, and vocabulary diversity and stores them in your voice profile, so scoring compares you to your own rhythm instead of a generic baseline.
 - **A risk tier for sensitive documents.** Set `risk_tier: sensitive` in `.clearfelt/domain.md` for a shareholder letter, a filing, anything Legal has reviewed, and `/clearfelt rewrite`/`write` stop rewriting away hedges and qualifiers and force the confirmation gate on, regardless of other settings.
 - **A durable log of every write.** `/clearfelt rewrite` and `/clearfelt write` append to `.clearfelt/audit.log` on every approved write, the first record that survives past the terminal session that approved it.
 - **A code-verified preservation guarantee, not just a prompt instruction.** `scripts/check.mjs` deterministically diffs a rewrite candidate against its source: a locked span that changed, or a constraint that's missed, always blocks the write; a dropped or added number, date, proper noun, or quote surfaces as a disclosed warning by default.
-- **See exactly what's active before you run anything.** `/clearfelt explain` prints every resolved config setting and where it came from (default, shipped, or your global override), plus voice/domain/hook state, in one place.
-- **Tested, not just trusted.** `node --test` runs a real regression suite (145+ tests) against every script, not just `scripts/detect.mjs`; `node scripts/eval.mjs` checks the score against a labeled corpus and reports the pass rate honestly, including where it currently falls short; `node scripts/lint.mjs` catches repo-consistency drift (stale config defaults, an undocumented rule source, a malformed config row) before it ships.
+- **See exactly what's active before you run anything.** `/clearfelt explain` prints every resolved config setting and which layer set it (default, shipped, or your global override), plus voice/domain/hook state, in one place.
+- **Tested, not just trusted.** `node --test` runs a real regression suite (160+ tests) against every script, not just `scripts/detect.mjs`; `node scripts/eval.mjs` checks the score against a labeled corpus and reports the pass rate honestly, including where it currently falls short; `node scripts/lint.mjs` catches repo-consistency drift (stale config defaults, an undocumented rule source, a malformed config row) before it ships.
 
 ## Quick start
 
@@ -35,7 +35,7 @@ npx skills add andrei-ionut-nita/clearfelt
 
 Uses the [skills CLI](https://github.com/vercel-labs/skills), which auto-detects Claude Code (and 70-plus other agents) and installs clearfelt into the right `skills/` directory for you. Add `-g` to install globally instead of per-project, or `-a claude-code` to target Claude Code specifically if you have more than one agent installed.
 
-**Compatibility.** `/clearfelt setup`, `audit`, `rewrite`, `write`, and `explain` are plain Markdown instructions with no Claude Code-specific tool calls, so they work on any agent that supports the Skills format, not just Claude Code. `$clearfelt hooks` and `scripts/pin.mjs`'s pin shortcuts are Claude Code-specific: both write into `.claude/settings.local.json`, Claude Code's own config format, which has no equivalent on other agents.
+**Compatibility.** `/clearfelt setup`, `audit`, `rewrite`, `write`, and `explain` are plain Markdown instructions with no Claude Code-specific tool calls, so they work on any agent that supports the Skills format, not just Claude Code. `$clearfelt hooks` and `scripts/pin.mjs`'s pin shortcuts are the exception: both write into `.claude/settings.local.json`, Claude Code's own config format, which has no equivalent on other agents.
 
 Prefer to manage it yourself:
 
@@ -71,7 +71,7 @@ Starting from an idea instead of a draft:
 /clearfelt write path/to/notes.md
 ```
 
-or paste the seed straight into the request. A short interview (format, length, audience) fills in whatever the seed doesn't already say, then it drafts, scores, and preservation-checks the result the same way `rewrite` does, and writes to a new file next to the seed (never overwriting it) once you approve.
+or paste the seed directly into the request. A quick round of questions (format, length, audience) fills in whatever the seed doesn't already say, then it drafts, scores, and runs the same preservation check as `rewrite`, and writes to a new file next to the seed (never overwriting it) once you approve.
 
 ## Before and after
 
@@ -100,7 +100,7 @@ Scores below are real, computed by running `scripts/detect.mjs` against these ex
 | `/clearfelt setup` | Builds or updates a voice profile (or profiles, in multi-voice mode) and a domain profile. Optional, recommended first, re-runnable any time. |
 | `/clearfelt audit [path]` | Scores a file or directory, reports every hit plus a separate readability report, never edits anything. |
 | `/clearfelt rewrite [path]` | Rewrites the file in memory, looping the scrub, re-score, and preservation-check steps until it clears the threshold (default 85) or hits the iteration cap (default 3), then shows a before/after and asks before writing. |
-| `/clearfelt write [seed]` | Drafts a new piece from a seed (a file path or pasted text) at a chosen length, scores and preservation-checks it the same way `rewrite` does, and writes to a new file next to the seed, never the seed itself, after you approve. |
+| `/clearfelt write [seed]` | Drafts a new piece from a seed (a file path or pasted text) at a chosen length, runs it through the same scoring and preservation check as `rewrite`, and writes to a new file next to the seed, never the seed itself, after you approve. |
 | `/clearfelt explain` | Prints every currently-resolved config setting and where it came from, plus voice/domain/hook state. Never edits anything. |
 | `$clearfelt hooks <status\|on\|off\|ignore-rule\|ignore-file\|reset>` | Manages an auto-audit hook that scores text files after you edit them. |
 | `node scripts/pin.mjs <pin\|unpin> <audit\|rewrite\|write\|explain\|setup>` | Creates or removes a `$clearfelt-<command>` shortcut skill. |
@@ -136,8 +136,8 @@ Every file you're meant to hand-edit is plain Markdown. No JSON, no code syntax 
 - **Save a preference across every project:** hand-edit `~/.clearfelt/settings.md` (same table format as `clearfelt.config.md`), or let `/clearfelt rewrite`/`write`'s save prompt write it for you. This file lives outside the skill's repo entirely, so it's the one place a customization survives a `git pull` or reinstall of the skill itself.
 - **Protect a specific piece of text through any rewrite:** wrap it in `<!-- clearfelt-lock -->` / `<!-- /clearfelt-lock -->` markers, on their own lines, directly in the file. Byte-identical afterward, at every intensity, no config needed. See `reference/rewrite.md`'s "Locked spans" section.
 - **Hold a rewrite or draft to a hard limit:** `--max-chars`/`--max-words`/`--must-contain`/`--must-not-contain` inline on the command, or copy `templates/constraints.example.md` to `.clearfelt/constraints/<name>.md` for a reusable named set and pass `--constraints <name>`. Checked against the actual output by `scripts/check.mjs`, not just prompt-instructed.
-- **Calibrate scoring to your own writing rhythm:** give `/clearfelt setup` a writing sample or a folder of past drafts and it runs `scripts/calibrate.mjs` for you, storing the result in your voice profile's "Personal calibration" section so the statistical signals compare you to yourself, not a generic baseline.
-- **Check what's actually active:** run `/clearfelt explain` to see every resolved setting and which of the three layers above it came from, before running anything else.
+- **Calibrate scoring to your own writing rhythm:** give `/clearfelt setup` a sample of your writing, or point it at a directory of past drafts, and it runs `scripts/calibrate.mjs` for you, storing the result in your voice profile's "Personal calibration" section so the statistical signals compare you to yourself, not a generic baseline.
+- **Check what's actually active:** run `/clearfelt explain` to see every resolved setting and which of the three layers above set it, before running anything else.
 
 ## Architecture
 
@@ -177,7 +177,7 @@ Working on clearfelt itself, rather than using it: see [docs/DEVELOP.md](docs/DE
 
 ## Evidence base
 
-Every rule in `rules/` carries a `source:` field. Run `/clearfelt audit` and the score report includes a source key for each hit; look it up in [docs/SOURCES.md](docs/SOURCES.md) for the actual paper, institutional report, or community tool it came from. [docs/RESEARCH.md](docs/RESEARCH.md) has the condensed synthesis of what the underlying research actually found. Nothing is cited without a checkable trail: claims that came up in research but couldn't be traced to a real paper are labeled `unresolved-*` rather than given a made-up citation. If you've seen a pattern repeatedly and it isn't here yet, see [CONTRIBUTING.md](CONTRIBUTING.md).
+Every rule in `rules/` carries a `source:` field. Run `/clearfelt audit` and the score report includes a source key for each hit; look it up in [docs/SOURCES.md](docs/SOURCES.md) to find the actual paper, institutional report, or community tool behind it. [docs/RESEARCH.md](docs/RESEARCH.md) has the condensed synthesis of what the underlying research actually found. Nothing is cited without a checkable trail: claims that came up in research but couldn't be traced to a real paper are labeled `unresolved-*` rather than given a made-up citation. If you've seen a pattern repeatedly and it isn't here yet, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Author
 
@@ -189,4 +189,4 @@ MIT. See [LICENSE](LICENSE).
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md). Current version: 0.4.0.
+See [CHANGELOG.md](CHANGELOG.md). Current version: 0.5.0.
