@@ -80,7 +80,7 @@ function checkFrontmatter() {
   }
   const fields = {};
   for (const line of match[1].split('\n')) {
-    const kv = line.match(/^(\w+):\s*(.*)$/);
+    const kv = line.match(/^([\w-]+):\s*(.*)$/);
     if (kv) fields[kv[1]] = kv[2];
   }
   if (!fields.name) fail('frontmatter', 'SKILL.md frontmatter is missing required field: name');
@@ -255,6 +255,38 @@ function checkConfigDrift() {
   }
 }
 
+// ---- check: config table rows parse cleanly ----
+// parseConfigTable's row regex (/^\|\s*([\w.]+)\s*\|\s*([^|]+?)\s*\|/) silently
+// skips any line it doesn't match: a typo'd pipe, a setting name with a space
+// or hyphen instead of an underscore, a dropped column. That row's value then
+// falls through to whatever CONFIG_DEFAULTS or a hardcoded fallback supplies,
+// with nothing telling a hand-editing user their edit didn't take. This check
+// flags any line under a CONFIG_SECTIONS heading that looks like a table row
+// (starts with a pipe) but doesn't match the parser's own row shape, so a
+// malformed edit fails loudly here instead of silently reverting to a default.
+function checkConfigRowSyntax() {
+  const path = join(ROOT, 'clearfelt.config.md');
+  const text = readFileSync(path, 'utf8');
+  const lines = text.split('\n');
+  for (const heading of CONFIG_SECTIONS) {
+    const start = lines.findIndex((l) => l.trim() === `## ${heading}`);
+    if (start === -1) continue;
+    for (let i = start + 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^##\s+/.test(line)) break;
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('|')) continue;
+      if (/^\|\s*-+\s*\|/.test(trimmed)) continue; // header separator row, e.g. |---|---|
+      if (/^\|\s*(Setting|Category)\s*\|/.test(trimmed)) continue; // column-label header row
+      if (/^\|\s*([\w.]+)\s*\|\s*([^|]+?)\s*\|/.test(trimmed)) continue; // parses fine
+      fail(
+        'config-syntax',
+        `clearfelt.config.md:${i + 1} under "## ${heading}" looks like a table row but doesn't match parseConfigTable's expected "| key | value |" shape, so it will be silently skipped and fall back to a default: ${trimmed}`
+      );
+    }
+  }
+}
+
 // ---- check: config defaults drift (three sources of truth for one number) ----
 // clearfelt.config.md's shipped defaults, scripts/lib/config.mjs's
 // CONFIG_DEFAULTS fallback-of-last-resort, and scripts/lib/score.mjs's own
@@ -380,6 +412,7 @@ checkXml();
 checkRuleSources();
 checkRuleBulletShape();
 checkConfigDrift();
+checkConfigRowSyntax();
 checkConfigDefaultsDrift();
 checkOutputShape();
 

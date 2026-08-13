@@ -12,6 +12,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
+import { isWithinCwd, runHookBody } from '../scripts/hook.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -98,6 +99,80 @@ test('an unknown action fails loudly instead of silently falling through to the 
   const dir = makeProject();
   try {
     assert.throws(() => run(['bogus-action'], dir), /Command failed/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('ignore-rule and ignore-file without an argument throw a clear error instead of silently no-oping', () => {
+  const dir = makeProject();
+  try {
+    run(['on'], dir);
+    assert.throws(() => run(['ignore-rule'], dir), /Command failed/);
+    assert.throws(() => run(['ignore-file'], dir), /Command failed/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('ignore-rule and ignore-file do not duplicate an already-ignored entry', () => {
+  const dir = makeProject();
+  try {
+    run(['on'], dir);
+    run(['ignore-rule', 'puffery_lexicon'], dir);
+    run(['ignore-rule', 'puffery_lexicon'], dir);
+    run(['ignore-file', '*.txt'], dir);
+    run(['ignore-file', '*.txt'], dir);
+    const status = run(['status'], dir);
+    // Exactly one occurrence of each, not two, proves the includes() guard
+    // actually prevented a duplicate push.
+    assert.equal((status.match(/puffery_lexicon/g) || []).length, 1);
+    assert.equal((status.match(/\*\.txt/g) || []).length, 1);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('on twice does not install a second, duplicate PostToolUse entry', () => {
+  const dir = makeProject();
+  try {
+    run(['on'], dir);
+    run(['on'], dir);
+    const settings = JSON.parse(readFileSync(join(dir, '.claude', 'settings.local.json'), 'utf8'));
+    assert.equal(settings.hooks.PostToolUse.length, 1);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('off when the hook was never turned on (.claude/settings.local.json does not exist) is a no-op, not a throw', () => {
+  const dir = makeProject();
+  try {
+    const out = run(['off'], dir);
+    assert.match(out, /Done\./);
+    assert.equal(existsSync(join(dir, '.claude', 'settings.local.json')), false);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('off preserves an unrelated PostToolUse entry a user configured themselves, only removing the clearfelt one', () => {
+  const dir = makeProject();
+  try {
+    run(['on'], dir);
+    const settingsPath = join(dir, '.claude', 'settings.local.json');
+    const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
+    // Deliberately no substring of "clearfelt" anywhere in this entry:
+    // removeHookManifest's own filter is a plain JSON.stringify(e).includes
+    // ('clearfelt') substring check, so an unrelated entry that happened to
+    // contain that substring would be a false test, not a real one.
+    settings.hooks.PostToolUse.push({ matcher: 'Bash', hooks: [{ type: 'command', command: 'echo hello world' }] });
+    writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+
+    run(['off'], dir);
+    const after = JSON.parse(readFileSync(settingsPath, 'utf8'));
+    assert.equal(after.hooks.PostToolUse.length, 1);
+    assert.match(JSON.stringify(after.hooks.PostToolUse[0]), /hello world/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -191,5 +266,143 @@ test('hook body skips a non-text extension entirely', () => {
     assert.equal(out, '');
   } finally {
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// ---- unit-level tests (direct import, not subprocess) ----
+// These isolate branches the subprocess tests above have no reliable,
+// portable way to trigger: isWithinCwd's catch block needs realpathSync to
+// throw, which only happens for a path that genuinely does not resolve
+// (existsSync's own false-on-any-stat-error behavior means the hook body's
+// call site never reaches isWithinCwd with such a path in practice, since
+// it's gated by an existsSync check first); runHookBody's stdin-read and
+// detect.mjs-output-parsing failure branches need a broken fd 0 or a
+// dependency returning malformed JSON despite exiting 0, neither of which a
+// real subprocess invocation can portably force. runHookBody's readStdin/
+// runDetect/state parameters exist for exactly this (see its own comment).
+
+function captureConsoleLog(fn) {
+  const original = console.log;
+  const lines = [];
+  console.log = (...args) => lines.push(args.join(' '));
+  try {
+    fn();
+  } finally {
+    console.log = original;
+  }
+  return lines;
+}
+
+test('isWithinCwd: a path that does not resolve (does not exist) fails closed, does not throw', () => {
+  assert.equal(isWithinCwd(join(tmpdir(), 'clearfelt-hook-unit-test-does-not-exist.md')), false);
+});
+
+test('isWithinCwd: a real path inside cwd returns true', () => {
+  assert.equal(isWithinCwd(fileURLToPath(import.meta.url)), true);
+});
+
+test('isWithinCwd: a real path outside cwd returns false', () => {
+  const outsideDir = mkdtempSync(join(tmpdir(), 'clearfelt-hook-iswithincwd-outside-'));
+  const outsideFile = join(outsideDir, 'outside.md');
+  writeFileSync(outsideFile, 'text');
+  try {
+    assert.equal(isWithinCwd(outsideFile), false);
+  } finally {
+    rmSync(outsideDir, { recursive: true, force: true });
+  }
+});
+
+test('runHookBody: a readStdin failure is a silent no-op, not a throw', () => {
+  const lines = captureConsoleLog(() => {
+    runHookBody({
+      state: { enabled: true, quiet: false, ignoreRules: [], ignoreFiles: [] },
+      readStdin: () => {
+        throw new Error('simulated broken stdin');
+      },
+    });
+  });
+  assert.deepEqual(lines, []);
+});
+
+test('runHookBody: detect.mjs exiting 0 but printing non-JSON is a silent no-op, not a throw', () => {
+  const target = join(__dirname, 'hook-unit-test-scratch.md');
+  writeFileSync(target, 'Delve into this seamless opportunity.');
+  try {
+    const lines = captureConsoleLog(() => {
+      runHookBody({
+        state: { enabled: true, quiet: false, ignoreRules: [], ignoreFiles: [] },
+        readStdin: () => JSON.stringify({ tool_input: { file_path: target } }),
+        runDetect: () => ({ status: 0, stdout: 'not valid json {{{' }),
+      });
+    });
+    assert.deepEqual(lines, []);
+  } finally {
+    rmSync(target);
+  }
+});
+
+test('runHookBody: a file_path that does not exist on disk is a silent no-op, not a throw', () => {
+  const missing = join(__dirname, 'hook-unit-test-does-not-exist.md');
+  const lines = captureConsoleLog(() => {
+    runHookBody({
+      state: { enabled: true, quiet: false, ignoreRules: [], ignoreFiles: [] },
+      readStdin: () => JSON.stringify({ tool_input: { file_path: missing } }),
+      runDetect: () => {
+        throw new Error('runDetect must never be called for a file_path that does not exist');
+      },
+    });
+  });
+  assert.deepEqual(lines, []);
+});
+
+test('runHookBody: detect.mjs exiting non-zero is a silent no-op, not a throw', () => {
+  const target = join(__dirname, 'hook-unit-test-scratch-nonzero.md');
+  writeFileSync(target, 'Delve into this seamless opportunity.');
+  try {
+    const lines = captureConsoleLog(() => {
+      runHookBody({
+        state: { enabled: true, quiet: false, ignoreRules: [], ignoreFiles: [] },
+        readStdin: () => JSON.stringify({ tool_input: { file_path: target } }),
+        runDetect: () => ({ status: 1, stdout: '' }),
+      });
+    });
+    assert.deepEqual(lines, []);
+  } finally {
+    rmSync(target);
+  }
+});
+
+test('runHookBody: zero hits and quiet:false prints the clean-score line', () => {
+  const target = join(__dirname, 'hook-unit-test-scratch-clean.md');
+  writeFileSync(target, 'Clean text.');
+  try {
+    const lines = captureConsoleLog(() => {
+      runHookBody({
+        state: { enabled: true, quiet: false, ignoreRules: [], ignoreFiles: [] },
+        readStdin: () => JSON.stringify({ tool_input: { file_path: target } }),
+        runDetect: () => ({ status: 0, stdout: JSON.stringify({ score: 100, hits: [] }) }),
+      });
+    });
+    assert.equal(lines.length, 1);
+    assert.match(lines[0], /scored 100\/100, no slop hits\./);
+  } finally {
+    rmSync(target);
+  }
+});
+
+test('runHookBody: zero hits and quiet:true prints nothing at all', () => {
+  const target = join(__dirname, 'hook-unit-test-scratch-quiet.md');
+  writeFileSync(target, 'Clean text.');
+  try {
+    const lines = captureConsoleLog(() => {
+      runHookBody({
+        state: { enabled: true, quiet: true, ignoreRules: [], ignoreFiles: [] },
+        readStdin: () => JSON.stringify({ tool_input: { file_path: target } }),
+        runDetect: () => ({ status: 0, stdout: JSON.stringify({ score: 100, hits: [] }) }),
+      });
+    });
+    assert.deepEqual(lines, []);
+  } finally {
+    rmSync(target);
   }
 });

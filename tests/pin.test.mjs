@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
@@ -64,6 +64,61 @@ test('pin safely re-pins (refreshes) a skill it created previously', () => {
     const out = run(['pin', 'setup'], dir);
     assert.match(out, /Pinned \$clearfelt-setup in 1 harness directory\./);
     assert.doesNotMatch(out, /skipped/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('invalid action or command: usage message, exit 1', () => {
+  const dir = makeProject();
+  try {
+    assert.throws(() => run(['bogus-action', 'audit'], dir), /Command failed/);
+    assert.throws(() => run(['pin', 'bogus-command'], dir), /Command failed/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('no harness directories at all: reports nothing pinned, does not create one', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'clearfelt-pin-test-no-harness-'));
+  mkdirSync(join(dir, '.git'));
+  try {
+    const out = run(['pin', 'audit'], dir);
+    assert.match(out, /No harness directories found/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('findProjectRoot walks up from a subdirectory to find .git, not just check cwd itself', () => {
+  const dir = makeProject();
+  const nested = join(dir, 'src', 'deeply', 'nested');
+  try {
+    mkdirSync(nested, { recursive: true });
+    const out = run(['pin', 'audit'], nested);
+    assert.match(out, /Pinned \$clearfelt-audit in 1 harness directory\./);
+    // Written at the real project root's .claude/, not a .claude created
+    // inside the nested cwd, proving the walk-up actually found the root.
+    assert.ok(existsSync(join(dir, '.claude', 'skills', 'clearfelt-audit', 'SKILL.md')));
+    assert.ok(!existsSync(join(nested, '.claude')));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('findProjectRoot falls back to the starting directory when no .git/package.json exists anywhere up to filesystem root', () => {
+  // A fresh tmpdir with nothing in its ancestry (no .git, no package.json)
+  // exercises the walk-all-the-way-to-root fallback (findProjectRoot's own
+  // final `return resolve(startDir)`), distinct from every other test here,
+  // which always has a .git at or above cwd.
+  const dir = mkdtempSync(join(tmpdir(), 'clearfelt-pin-test-no-root-marker-'));
+  try {
+    const out = run(['pin', 'audit'], dir);
+    // No harness dirs were created here either, so this still reports
+    // nothing pinned, the meaningful assertion is that this returns
+    // normally (falls back to startDir) instead of walking off the real
+    // filesystem root or throwing.
+    assert.match(out, /No harness directories found/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

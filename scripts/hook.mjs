@@ -150,7 +150,7 @@ function runAdmin(action, arg) {
 // Claude's own Edit/Write/MultiEdit call, so this mostly guards against a
 // future or unexpected payload shape rather than a live attack today.
 // Fails closed (false) on anything unresolvable, rather than assuming safe.
-function isWithinCwd(candidatePath) {
+export function isWithinCwd(candidatePath) {
   try {
     const cwdReal = realpathSync(process.cwd());
     const candidateReal = realpathSync(candidatePath);
@@ -165,13 +165,24 @@ function globToRegExp(glob) {
   return new RegExp(`^${escaped}$`);
 }
 
-function runHookBody() {
-  const state = readState();
+// The three injectable params (readStdin, runDetect, state) are I/O
+// boundaries with no meaningful default-vs-real distinction to design
+// around: production always uses the defaults below (main()'s own call
+// passes none), they exist purely so tests/hook.test.mjs can exercise the
+// stdin-read-failure and detect.mjs-produced-bad-JSON branches directly,
+// two real defensive paths a subprocess-only test has no reliable, portable
+// way to trigger (a genuinely broken fd 0, or a dependency misbehaving
+// despite exiting 0).
+export function runHookBody({
+  readStdin = () => readFileSync(0, 'utf8'),
+  runDetect = (filePath) => spawnSync('node', [join(ROOT, 'scripts', 'detect.mjs'), '--mode', 'report', filePath], { encoding: 'utf8' }),
+  state = readState(),
+} = {}) {
   if (!state.enabled) return;
 
   let stdinText = '';
   try {
-    stdinText = readFileSync(0, 'utf8');
+    stdinText = readStdin();
   } catch {
     return;
   }
@@ -190,9 +201,7 @@ function runHookBody() {
   if (!existsSync(filePath)) return;
   if (!isWithinCwd(filePath)) return;
 
-  const result = spawnSync('node', [join(ROOT, 'scripts', 'detect.mjs'), '--mode', 'report', filePath], {
-    encoding: 'utf8',
-  });
+  const result = runDetect(filePath);
   if (result.status !== 0) return;
 
   let report;

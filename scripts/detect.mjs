@@ -13,7 +13,7 @@
 
 import { existsSync, readdirSync, statSync, realpathSync } from 'node:fs';
 import { join, resolve, sep, extname } from 'node:path';
-import { loadConfig, loadVoiceProfileOverrides, loadDomainOverrides } from './lib/config.mjs';
+import { loadConfig, loadVoiceProfileOverrides, loadDomainOverrides, loadVoiceProfileCalibration } from './lib/config.mjs';
 import { loadRules } from './lib/rules.mjs';
 import { runFile } from './lib/report.mjs';
 
@@ -99,7 +99,13 @@ function main() {
   }
   assertWithinCwd(targetPath, 'target path');
 
-  const config = loadConfig();
+  const baseConfig = loadConfig();
+  // Personal calibration (see loadVoiceProfileCalibration's own comment)
+  // overrides the generic, fixture-derived statistical baselines for this
+  // project's scoring when a voice profile has computed them; absent that,
+  // this is a no-op and baseConfig's shipped/default values pass through
+  // unchanged.
+  const config = { ...baseConfig, ...loadVoiceProfileCalibration(process.cwd(), baseConfig, args.voice) };
   const { all: rules } = loadRules(config);
   const voiceOverrides = loadVoiceProfileOverrides(process.cwd(), config, args.voice);
   const domainOverrides = loadDomainOverrides(process.cwd());

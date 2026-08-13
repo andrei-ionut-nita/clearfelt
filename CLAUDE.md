@@ -22,6 +22,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full file-by-file break
 - Working on the repo itself, testing each script: [docs/DEVELOP.md](docs/DEVELOP.md)
 - The writing style the tool enforces: [docs/STYLE.md](docs/STYLE.md)
 - Why the repo is shaped the way it is: [docs/decisions/](docs/decisions/)
+- Features designed and deliberately not built yet, and why: [docs/ROADMAP.md](docs/ROADMAP.md)
 - Cutting a release: [docs/RELEASE.md](docs/RELEASE.md)
 - What the underlying research actually found: [docs/RESEARCH.md](docs/RESEARCH.md)
 - The bibliography every rule's `source:` key resolves against: [docs/SOURCES.md](docs/SOURCES.md)

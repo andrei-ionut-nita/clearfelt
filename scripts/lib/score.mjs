@@ -21,8 +21,10 @@ export function burstinessScore(text) {
   const mean = lengths.reduce((a, b) => a + b, 0) / lengths.length;
   const variance = lengths.reduce((a, b) => a + (b - mean) ** 2, 0) / lengths.length;
   const stdDev = Math.sqrt(variance);
-  const cv = mean === 0 ? 0 : stdDev / mean;
-  return { coefficientOfVariation: cv, sentenceCount: lengths.length };
+  // mean can never be 0 here: lengths only ever holds values already
+  // filtered to > 0 (see the .filter((n) => n > 0) above), so an all-zero
+  // (and therefore zero-mean) set can't reach this point.
+  return { coefficientOfVariation: stdDev / mean, sentenceCount: lengths.length };
 }
 
 export function typeTokenRatio(text) {
@@ -100,7 +102,9 @@ export function trigramRepetitionRatio(text) {
   const counts = new Map();
   for (const t of trigrams) counts.set(t, (counts.get(t) || 0) + 1);
   const repeated = [...counts.values()].filter((c) => c > 1).reduce((a, b) => a + b, 0);
-  return trigrams.length === 0 ? 0 : repeated / trigrams.length;
+  // trigrams.length can never be 0 here: the words.length < 3 guard above
+  // already ensures at least one trigram exists by the time this runs.
+  return repeated / trigrams.length;
 }
 
 // Sentence burstiness is blind to paragraph structure entirely: splitSentences
@@ -127,8 +131,9 @@ export function paragraphStructureScore(text) {
   const mean = lengths.reduce((a, b) => a + b, 0) / lengths.length;
   const variance = lengths.reduce((a, b) => a + (b - mean) ** 2, 0) / lengths.length;
   const stdDev = Math.sqrt(variance);
-  const cv = mean === 0 ? 0 : stdDev / mean;
-  return { coefficientOfVariation: cv, paragraphCount: lengths.length };
+  // Same reasoning as burstinessScore above: lengths is already filtered to
+  // > 0 values only, so mean === 0 can't happen here.
+  return { coefficientOfVariation: stdDev / mean, paragraphCount: lengths.length };
 }
 
 // ---- readability (Flesch, Flesch-Kincaid, Gunning Fog, processing fluency) ----
@@ -200,7 +205,8 @@ export function computeScore(text, hits, config) {
   const deductionApplied = Math.min(deduction, deductionCap);
 
   const { coefficientOfVariation } = burstinessScore(text);
-  const burstinessAdjustment = (Math.min(coefficientOfVariation, 1) - 0.5) * (config.burstiness_weight ?? 12);
+  const burstinessAdjustment =
+    (Math.min(coefficientOfVariation, 1) - (config.burstiness_baseline ?? 0.5)) * (config.burstiness_weight ?? 12);
 
   const ttr = typeTokenRatio(text);
   const rootTtr = rootTypeTokenRatio(text);
@@ -213,7 +219,9 @@ export function computeScore(text, hits, config) {
   const { sentenceCount } = burstinessScore(text);
   const { coefficientOfVariation: paragraphCV, paragraphCount } = paragraphStructureScore(text);
   const paragraphVarietyAdjustment =
-    paragraphCount >= 2 ? (Math.min(paragraphCV, 1) - 0.5) * (config.paragraph_variety_weight ?? 12) : 0;
+    paragraphCount >= 2
+      ? (Math.min(paragraphCV, 1) - (config.paragraph_variety_baseline ?? 0.5)) * (config.paragraph_variety_weight ?? 12)
+      : 0;
   const wallOfTextPenalty =
     paragraphCount <= 1 && sentenceCount >= (config.wall_of_text_sentence_threshold ?? 5)
       ? config.wall_of_text_penalty ?? 15

@@ -20,3 +20,4 @@ Short records of the real calls made while designing clearfelt, kept here so the
 - [0016: A code-verified preservation checker, not just prompt instruction](0016-preservation-checker.md)
 - [0017: Windowed vocabulary diversity (MATTR), replacing Root TTR](0017-windowed-vocabulary-diversity.md)
 - [0018: Fixes from a three-persona review (writing, engineering, pipeline design)](0018-multi-persona-review-fixes.md)
+- [0019: Model-judged command routing, not a `commands/` directory](0019-model-judged-command-routing.md)

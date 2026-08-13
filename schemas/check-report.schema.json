@@ -24,6 +24,11 @@
         "added": { "type": "array", "items": { "type": "object", "required": ["type", "value", "context"] } }
       }
     },
+    "constraints": {
+      "type": ["array", "null"],
+      "description": "Per-constraint pass/fail results (max_chars, max_words, must_contain, must_not_contain), or null when no --constraints/inline constraint flags were given for this run.",
+      "items": { "type": "object", "required": ["rule", "pass"] }
+    },
     "verdict": { "type": "string", "enum": ["pass", "warn", "fail"] }
   }
 }

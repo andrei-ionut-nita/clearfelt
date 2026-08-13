@@ -6,7 +6,7 @@ Read-only. Prints every currently-resolved setting and where it came from, befor
 
 1. If `voice.mode` is `multi` (see `clearfelt.config.md`) and no voice was named in the request, ask which voice applies before continuing, then pass it as `--voice <name>`.
 2. Run: `node scripts/explain.mjs [--voice <name>]`
-3. Present the JSON following [reference/output-format.md](output-format.md)'s conventions: tables, not a prose summary. One table for voice/domain state, one table for config (Setting | Value | Source), one table for hook state.
+3. Present the JSON following [reference/format/explain.md](format/explain.md)'s template, itself built on [reference/format/conventions.md](format/conventions.md): tables, not a prose summary. One table for voice/domain state, one table for config (Setting | Value | Source), one table for hook state.
 4. If `.clearfelt/voice-profile.md` or `.clearfelt/domain.md` doesn't exist, say so plainly in the relevant row rather than leaving a blank cell, and mention once that `/clearfelt setup` builds them.
 5. Never edits anything. If the user wants to change what's shown, point them at `/clearfelt setup` (voice/domain), `$clearfelt hooks` (hook state), or a direct edit to `clearfelt.config.md` / `~/.clearfelt/settings.md` / `.clearfelt/domain.md` depending on which layer they want to change.
 

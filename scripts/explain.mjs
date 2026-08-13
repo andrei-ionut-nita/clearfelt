@@ -15,6 +15,7 @@ import { join } from 'node:path';
 import {
   loadConfigWithProvenance,
   extractBulletSection,
+  loadVoiceProfileCalibration,
 } from './lib/config.mjs';
 import { readState } from './hook.mjs';
 
@@ -38,7 +39,11 @@ function parseArgs(argv) {
 }
 
 function explainVoice(config, voiceName) {
-  const mode = config['voice.mode']?.value ?? 'single';
+  // config always comes from loadConfigWithProvenance(), which guarantees an
+  // entry for every CONFIG_DEFAULTS key ('voice.mode' included), so no
+  // fallback is needed here, unlike explainDomain's field()-parsed values
+  // below, which genuinely can be absent from a real domain.md.
+  const mode = config['voice.mode'].value;
   const profilePath =
     mode === 'multi' && voiceName
       ? join(process.cwd(), '.clearfelt', 'voices', `${voiceName}.md`)
@@ -47,7 +52,21 @@ function explainVoice(config, voiceName) {
   const keptWordsCount = exists
     ? extractBulletSection(readFileSync(profilePath, 'utf8'), '## Words I want to keep using').size
     : 0;
-  return { mode, profilePath, exists, keptWordsCount };
+  // Reuses config's own resolved value here (raw config, not {value, source}
+  // provenance) since loadVoiceProfileCalibration wants a plain "which
+  // voice.mode" string, matching how detect.mjs itself resolves it.
+  const rawConfig = { 'voice.mode': mode };
+  const calibration = loadVoiceProfileCalibration(process.cwd(), rawConfig, voiceName);
+  return {
+    mode,
+    profilePath,
+    exists,
+    keptWordsCount,
+    personalCalibration:
+      Object.keys(calibration).length > 0
+        ? calibration
+        : 'not computed, run /clearfelt setup with a writing sample or corpus, generic defaults apply',
+  };
 }
 
 function explainDomain(config) {
@@ -60,10 +79,12 @@ function explainDomain(config) {
       mode: null,
       preferredIntensity: null,
       preferredLength: null,
+      // Same guarantee as explainVoice's mode above: these two keys are
+      // always present in config, no fallback needed.
       targetGradeLevel: {
-        min: config.target_grade_level_min?.value,
-        max: config.target_grade_level_max?.value,
-        source: config.target_grade_level_min?.source ?? 'default',
+        min: config.target_grade_level_min.value,
+        max: config.target_grade_level_max.value,
+        source: config.target_grade_level_min.source,
       },
       exemptTermCount: 0,
     };
@@ -95,9 +116,9 @@ function explainDomain(config) {
     preferredIntensity: intensityMatch,
     preferredLength: lengthMatch,
     targetGradeLevel: {
-      min: minMatch ? Number(minMatch[1]) : config.target_grade_level_min?.value,
-      max: maxMatch ? Number(maxMatch[1]) : config.target_grade_level_max?.value,
-      source: minMatch || maxMatch ? '.clearfelt/domain.md' : (config.target_grade_level_min?.source ?? 'default'),
+      min: minMatch ? Number(minMatch[1]) : config.target_grade_level_min.value,
+      max: maxMatch ? Number(maxMatch[1]) : config.target_grade_level_max.value,
+      source: minMatch || maxMatch ? '.clearfelt/domain.md' : config.target_grade_level_min.source,
     },
     exemptTermCount,
   };
@@ -114,6 +135,16 @@ function main() {
   const voice = explainVoice(config, args.voice);
   const domain = explainDomain(config);
   const hook = readState();
+
+  // Personal calibration overrides three of config's statistical-baseline
+  // keys for actual scoring (see detect.mjs); reflect that here too, or
+  // /clearfelt explain would show the generic default/shipped value as if
+  // it were still driving the score.
+  if (typeof voice.personalCalibration === 'object') {
+    for (const [key, value] of Object.entries(voice.personalCalibration)) {
+      config[key] = { value, source: `${voice.profilePath} (computed)` };
+    }
+  }
 
   console.log(
     JSON.stringify(

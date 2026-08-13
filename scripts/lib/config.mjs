@@ -78,10 +78,12 @@ export const CONFIG_DEFAULTS = {
   tier3_density_threshold: 3,
   deduction_cap: 65,
   burstiness_weight: 12,
+  burstiness_baseline: 0.5,
   vocabulary_diversity_baseline: 0.8688,
   vocabulary_diversity_weight: 140,
   repetition_weight: 27,
   paragraph_variety_weight: 12,
+  paragraph_variety_baseline: 0.5,
   wall_of_text_penalty: 15,
   wall_of_text_sentence_threshold: 5,
   'rules.include_unresolved': false,
@@ -99,6 +101,7 @@ export const CONFIG_DEFAULTS = {
   'check.hard_fail_on_locked_span_mismatch': true,
   'check.hard_fail_on_dropped_fact': false,
   'check.hard_fail_on_added_fact': false,
+  'check.hard_fail_on_constraint_violation': true,
   target_grade_level_min: 6,
   target_grade_level_max: 12,
 };
@@ -180,4 +183,37 @@ export function loadDomainReadabilityTarget(targetDir) {
   if (minMatch) target.target_grade_level_min = Number(minMatch[1]);
   if (maxMatch) target.target_grade_level_max = Number(maxMatch[1]);
   return target;
+}
+
+// ---- personal calibration (voice-profile-scoped statistical baseline) ----
+
+// scripts/calibrate.mjs computes these three numbers from a writer's own
+// sample or corpus and /clearfelt setup writes them into a voice profile's
+// "Personal calibration (computed)" section. This function is the read side:
+// if present, these override clearfelt.config.md's generic, fixture-derived
+// defaults (vocabulary_diversity_baseline, burstiness_baseline,
+// paragraph_variety_baseline) for this project's scoring, so a writer is
+// measured against their own natural rhythm instead of a stranger's. Purely
+// additive: a project with no calibration section returns {}, and every
+// caller merges this on top of loadConfig()'s result, so the generic
+// defaults still apply unchanged when it's absent.
+export function loadVoiceProfileCalibration(targetDir, config, voiceName) {
+  const profilePath =
+    config['voice.mode'] === 'multi' && voiceName
+      ? join(targetDir, '.clearfelt', 'voices', `${voiceName}.md`)
+      : join(targetDir, '.clearfelt', 'voice-profile.md');
+  if (!existsSync(profilePath)) return {};
+  const text = readFileSync(profilePath, 'utf8');
+  const sectionStart = text.indexOf('## Personal calibration (computed)');
+  if (sectionStart === -1) return {};
+  const section = text.slice(sectionStart).split(/\n##\s+/)[0];
+
+  const calibration = {};
+  const mattrMatch = section.match(/baseline_mattr:\s*(\d+(\.\d+)?)/);
+  const burstinessMatch = section.match(/baseline_burstiness_cv:\s*(\d+(\.\d+)?)/);
+  const paragraphMatch = section.match(/baseline_paragraph_cv:\s*(\d+(\.\d+)?)/);
+  if (mattrMatch) calibration.vocabulary_diversity_baseline = Number(mattrMatch[1]);
+  if (burstinessMatch) calibration.burstiness_baseline = Number(burstinessMatch[1]);
+  if (paragraphMatch) calibration.paragraph_variety_baseline = Number(paragraphMatch[1]);
+  return calibration;
 }

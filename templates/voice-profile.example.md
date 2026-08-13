@@ -26,3 +26,14 @@ Hard rules that should never be broken, regardless of intensity setting.
 
 - (example) Never use bullet points in body paragraphs.
 - (example) Always British spelling.
+
+## Personal calibration (computed)
+
+Computed, not hand-written: `node scripts/calibrate.mjs <sample-file-or-directory>` measures a writer's own vocabulary diversity and sentence/paragraph rhythm from real past writing, and `/clearfelt setup` writes the result here. When present, these three numbers override `clearfelt.config.md`'s generic, fixture-derived defaults for this project's scoring, so a document is measured against this writer's own natural rhythm instead of a stranger's baseline. Leave unset (delete this section, or leave the fields blank) to use the shipped generic defaults.
+
+A directory of several past pieces gives sturdier numbers than one short pasted sample; `scripts/calibrate.mjs` warns when the input is under ~300 words. Re-run it and update these values if the writer's style meaningfully changes, or if the original calibration ran on a thin sample.
+
+- baseline_mattr: (unset)
+- baseline_burstiness_cv: (unset)
+- baseline_paragraph_cv: (unset)
+- sample_word_count: (unset)

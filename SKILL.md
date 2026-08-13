@@ -1,10 +1,10 @@
 ---
 name: clearfelt
-description: Strip clinical AI writing patterns ("slop") out of text and rewrite it with human warmth, or turn a short seed idea into a full first draft. Use when the user asks to check text for AI tells, score how "AI-sounding" a draft is, rewrite a document, remove corporate/robotic phrasing, flesh out a rough note into a post or article, set up a personal writing voice profile, or see which settings are currently active. Covers commands "/clearfelt setup", "/clearfelt audit", "/clearfelt rewrite", "/clearfelt write", and "/clearfelt explain".
+description: Strip clinical AI writing patterns ("slop") out of text and rewrite it with human warmth, or turn a short seed idea into a full human-sounding first draft. Use when the user asks to check text for AI tells, score how "AI-sounding" a draft is, rewrite a document so it reads less like AI output, remove corporate/robotic phrasing, flesh out a rough note into a human-sounding post or article, set up a personal writing voice profile, or see which settings are currently active. Covers commands "/clearfelt setup", "/clearfelt audit", "/clearfelt rewrite", "/clearfelt write", and "/clearfelt explain".
 license: MIT
 ---
 
-clearfelt scores text in code, not in a model's head: `scripts/detect.mjs` parses the Markdown rule files under `rules/` and computes the Human Score directly, so anyone can rerun it and get the same result. Present every result following [reference/output-format.md](reference/output-format.md): tables and headers, not prose paragraphs. [writing.md](writing.md) is the editorial doctrine behind every rule and rewrite decision; [voice.md](voice.md) explains how a user's own voice-profile preference overrides it. Both govern `/clearfelt rewrite` in particular, read them before changing rewrite behavior.
+clearfelt scores text in code, not in a model's head: `scripts/detect.mjs` parses the Markdown rule files under `rules/` and computes the Human Score directly, so anyone can rerun it and get the same result. Present every result following [reference/format/conventions.md](reference/format/conventions.md) and the per-command template in `reference/format/`: tables and headers, not prose paragraphs. [writing.md](writing.md) is the editorial doctrine behind every rule and rewrite decision; [voice.md](voice.md) explains how a user's own voice-profile preference overrides it. Both govern `/clearfelt rewrite` in particular, read them before changing rewrite behavior.
 
 ## Commands
 

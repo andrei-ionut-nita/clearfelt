@@ -7,18 +7,23 @@
 //
 // Known gap, not fixed here: `loadConfig()` reads `~/.clearfelt/settings.md`
 // via `os.homedir()` with no override hook, so the config-weight regression
-// test below temporarily writes and then removes a real file in the
-// machine's home directory. Acceptable for now; a future refactor could add
-// a CLEARFELT_HOME env override to avoid touching the real home directory
-// during tests.
+// test below (via helpers/global-settings.mjs's withGlobalSettings) still
+// temporarily writes a real file in the machine's home directory. A future
+// refactor could add a CLEARFELT_HOME env override to avoid that. What IS
+// fixed here: this used to be its own copy-pasted backup/restore block,
+// unsafe under node --test's default cross-file concurrency since
+// check.test.mjs touches the exact same real file; both now go through one
+// lock-protected helper instead of racing on it independently.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from 'node:fs';
+import { writeFileSync, mkdirSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { homedir } from 'node:os';
+import { tmpdir } from 'node:os';
+import { spawnSync } from 'node:child_process';
+import { withGlobalSettings, acquireLock, releaseLock } from './helpers/global-settings.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -155,36 +160,321 @@ test('regression: category severity weights from config actually multiply the de
   // never populated, so every category silently scored at 1.0 regardless of
   // clearfelt.config.md. This reproduces that exact scenario via the
   // highest-precedence override file and asserts the weight actually lands.
-  const settingsDir = join(homedir(), '.clearfelt');
-  const settingsPath = join(settingsDir, 'settings.md');
-  const dirAlreadyExisted = existsSync(settingsDir);
-  const fileAlreadyExisted = existsSync(settingsPath);
-  const previousContent = fileAlreadyExisted ? readFileSync(settingsPath, 'utf8') : null;
+  const baseline = run('ai-heavy-sample.md');
+  const puffuryHits = baseline.hits.filter((h) => h.category === 'puffery_lexicon');
+  assert.ok(puffuryHits.length > 0, 'fixture must contain a puffery_lexicon hit for this test to mean anything');
 
+  withGlobalSettings(
+    ['## Category severity weights', '', '| Category | Weight multiplier |', '|---|---|', '| puffery_lexicon | 0.5 |', ''],
+    () => {
+      const weighted = run('ai-heavy-sample.md');
+      // The weight applies to every puffery_lexicon hit, not just one, so
+      // the expected drop is 0.5 (not the old buggy 1.0) applied across all
+      // of them, summed, not a single hit's severity.
+      const expectedDrop = puffuryHits.reduce((sum, h) => sum + h.severity, 0) * 0.5;
+      assert.equal(
+        weighted.breakdown.deduction,
+        baseline.breakdown.deduction - expectedDrop,
+        'a 0.5 category weight in ~/.clearfelt/settings.md should cut that category\'s contribution in half',
+      );
+    },
+  );
+});
+
+test('leadDriver falls back to "no single factor dominates" when every impact is exactly zero', () => {
+  // report.mjs's leadDriver is scoring.impacts[0]'s label, or this fallback
+  // string when impacts is empty. impacts only drops an entry when its
+  // rounded value is exactly 0, so an empty document scored against
+  // baselines forced to 0 (matching its own all-zero actual statistics)
+  // is the one input that empties every component at once.
+  const emptyPath = join(FIXTURES, 'empty-for-leaddriver-test.md');
+  writeFileSync(emptyPath, '');
   try {
-    const baseline = run('ai-heavy-sample.md');
-    const puffuryHits = baseline.hits.filter((h) => h.category === 'puffery_lexicon');
-    assert.ok(puffuryHits.length > 0, 'fixture must contain a puffery_lexicon hit for this test to mean anything');
-
-    if (!dirAlreadyExisted) mkdirSync(settingsDir, { recursive: true });
-    writeFileSync(
-      settingsPath,
-      ['## Category severity weights', '', '| Category | Weight multiplier |', '|---|---|', '| puffery_lexicon | 0.5 |', ''].join('\n'),
-    );
-
-    const weighted = run('ai-heavy-sample.md');
-    // The weight applies to every puffery_lexicon hit, not just one, so the
-    // expected drop is 0.5 (not the old buggy 1.0) applied across all of
-    // them, summed, not a single hit's severity.
-    const expectedDrop = puffuryHits.reduce((sum, h) => sum + h.severity, 0) * 0.5;
-    assert.equal(
-      weighted.breakdown.deduction,
-      baseline.breakdown.deduction - expectedDrop,
-      'a 0.5 category weight in ~/.clearfelt/settings.md should cut that category\'s contribution in half',
+    withGlobalSettings(
+      [
+        '## Statistical signals',
+        '',
+        '| Setting | Default |',
+        '|---|---|',
+        '| vocabulary_diversity_baseline | 0 |',
+        '| burstiness_baseline | 0 |',
+        '| paragraph_variety_baseline | 0 |',
+        '',
+      ],
+      () => {
+        const out = execFileSync(process.execPath, [DETECT, '--mode', 'report', emptyPath], { cwd: FIXTURES, encoding: 'utf8' });
+        const result = JSON.parse(out);
+        assert.deepEqual(result.breakdown.impacts, [], 'every impact must be exactly zero for this test to mean anything');
+        assert.equal(result.leadDriver, 'no single factor dominates; every signal is near zero');
+      },
     );
   } finally {
-    if (fileAlreadyExisted) writeFileSync(settingsPath, previousContent);
-    else if (existsSync(settingsPath)) rmSync(settingsPath);
-    if (!dirAlreadyExisted && existsSync(settingsDir)) rmSync(settingsDir, { recursive: true, force: true });
+    rmSync(emptyPath);
+  }
+});
+
+test('personal calibration in .clearfelt/voice-profile.md overrides the generic statistical baselines', () => {
+  // Feature: scripts/calibrate.mjs computes a writer's own MATTR/burstiness/
+  // paragraph-CV, /clearfelt setup stores it, and loadVoiceProfileCalibration
+  // reads it back to override clearfelt.config.md's generic, fixture-derived
+  // defaults for this project only. A voice profile with no calibration
+  // section must be a strict no-op (covered implicitly by every other test
+  // in this file, none of which create one); this test covers the override
+  // actually taking effect when the section is present.
+  // tests/fixtures/.clearfelt/ is shared with tests/explain.test.mjs (both
+  // files' FIXTURES resolve to the same tests/fixtures directory), and
+  // node --test runs separate test files concurrently by default: lock it
+  // the same way withGlobalSettings already locks ~/.clearfelt/settings.md.
+  acquireLock();
+  const clearfeltDir = join(FIXTURES, '.clearfelt');
+  const profilePath = join(clearfeltDir, 'voice-profile.md');
+  const alreadyExisted = existsSync(clearfeltDir);
+
+  try {
+    const baseline = run('human-sample.md');
+
+    mkdirSync(clearfeltDir, { recursive: true });
+    writeFileSync(
+      profilePath,
+      [
+        '# Voice profile',
+        '',
+        '## Personal calibration (computed)',
+        '',
+        '- baseline_mattr: 0.5',
+        '- baseline_burstiness_cv: 0.9',
+        '- baseline_paragraph_cv: 0.9',
+        '- sample_word_count: 4000',
+        '',
+      ].join('\n'),
+    );
+
+    const calibrated = run('human-sample.md');
+
+    // human-sample.md's actual MATTR/burstiness/paragraph CV don't change,
+    // only the baselines they're measured against do, so every one of the
+    // three adjustments that depends on a baseline must move, each in a
+    // known direction given the fixture's own values (all three test
+    // baselines are set below the shipped/default 0.5 or the document's
+    // actual CV, so every adjustment should move in a knowable direction,
+    // not just "some assertion about vocabAdjustment", which is all a
+    // shallower version of this test would catch).
+    assert.notEqual(
+      calibrated.breakdown.vocabAdjustment,
+      baseline.breakdown.vocabAdjustment,
+      'a personal vocabulary_diversity_baseline must change the score once set',
+    );
+    assert.ok(
+      calibrated.breakdown.vocabAdjustment > baseline.breakdown.vocabAdjustment,
+      'a lower personal baseline than the shipped default should raise vocabAdjustment, not lower it',
+    );
+    assert.notEqual(
+      calibrated.breakdown.burstinessAdjustment,
+      baseline.breakdown.burstinessAdjustment,
+      'a personal burstiness_baseline must change the score once set',
+    );
+    assert.notEqual(
+      calibrated.breakdown.paragraphVarietyAdjustment,
+      baseline.breakdown.paragraphVarietyAdjustment,
+      'a personal paragraph_variety_baseline must change the score once set',
+    );
+  } finally {
+    if (existsSync(profilePath)) rmSync(profilePath);
+    if (!alreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+    releaseLock();
+  }
+});
+
+test('voice.mode: multi with --voice <name>: .clearfelt/voices/<name>.md "Words I want to keep using" suppresses that word\'s hit', () => {
+  // Shares tests/fixtures/.clearfelt/ with the calibration test above and
+  // with tests/explain.test.mjs; withGlobalSettings's own lock covers both
+  // the settings mutation and this fixture-directory mutation, so no
+  // separate acquireLock/releaseLock here (that would deadlock against it).
+  const voicesDir = join(FIXTURES, '.clearfelt', 'voices');
+  const clearfeltDir = join(FIXTURES, '.clearfelt');
+  const alreadyExisted = existsSync(clearfeltDir);
+  const profilePath = join(voicesDir, 'work.md');
+
+  withGlobalSettings(['## Voice', '', '| Setting | Default |', '|---|---|', '| voice.mode | multi |', ''], () => {
+    try {
+      const baseline = run('ai-heavy-sample.md');
+      assert.ok(
+        baseline.hits.some((h) => h.pattern.toLowerCase() === 'delve'),
+        'ai-heavy-sample.md must trigger the "delve" hit for this override test to mean anything',
+      );
+
+      mkdirSync(voicesDir, { recursive: true });
+      writeFileSync(profilePath, ['# Voice profile: work', '', '## Words I want to keep using', '', '- delve', ''].join('\n'));
+
+      const withVoice = run('ai-heavy-sample.md', ['--voice', 'work']);
+      assert.ok(
+        !withVoice.hits.some((h) => h.pattern.toLowerCase() === 'delve'),
+        'the multi-voice profile override must suppress the "delve" hit',
+      );
+    } finally {
+      if (existsSync(profilePath)) rmSync(profilePath);
+      if (!alreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---- CLI surface: modes, directory scanning, and error paths ----
+// The tests above all go through the run() helper (single file, --mode
+// report). These cover the rest of detect.mjs's own main(): --help, no
+// path, an unknown --mode, a missing or out-of-project path, and
+// directory mode (report/score/scan aggregation, and the empty-directory
+// error), none of which run() exercises.
+
+test('--help prints usage (to stdout, unlike every other usage/error message in this file) and exits zero', () => {
+  const { status, stdout } = spawnSync(process.execPath, [DETECT, '--help'], { cwd: FIXTURES, encoding: 'utf8' });
+  assert.equal(status, 0);
+  assert.match(stdout, /Usage:/);
+});
+
+test('no path argument: usage to stderr, exit 1', () => {
+  const { status, stderr } = spawnSync(process.execPath, [DETECT, '--mode', 'report'], { cwd: FIXTURES, encoding: 'utf8' });
+  assert.equal(status, 1);
+  assert.match(stderr, /Usage:/);
+});
+
+test('unknown --mode: clear error, exit 1', () => {
+  const { status, stderr } = spawnSync(process.execPath, [DETECT, '--mode', 'bogus', join(FIXTURES, 'human-sample.md')], {
+    cwd: FIXTURES,
+    encoding: 'utf8',
+  });
+  assert.equal(status, 1);
+  assert.match(stderr, /unknown --mode "bogus"/);
+});
+
+test('a path that does not exist: clear error, exit 1', () => {
+  const { status, stderr } = spawnSync(process.execPath, [DETECT, '--mode', 'report', 'does-not-exist.md'], {
+    cwd: FIXTURES,
+    encoding: 'utf8',
+  });
+  assert.equal(status, 1);
+  assert.match(stderr, /path not found/);
+});
+
+test('a path outside the project directory is refused, even when it exists', () => {
+  const outsideFile = join(tmpdir(), 'clearfelt-detect-outside-test.md');
+  writeFileSync(outsideFile, 'Some text.');
+  try {
+    const { status, stderr } = spawnSync(process.execPath, [DETECT, '--mode', 'report', outsideFile], { cwd: FIXTURES, encoding: 'utf8' });
+    assert.equal(status, 1);
+    assert.match(stderr, /resolves outside the current project/);
+  } finally {
+    if (existsSync(outsideFile)) rmSync(outsideFile);
+  }
+});
+
+test('single-file mode, --mode score: compact one-line JSON, not pretty-printed', () => {
+  const out = execFileSync(process.execPath, [DETECT, '--mode', 'score', join(FIXTURES, 'human-sample.md')], {
+    cwd: FIXTURES,
+    encoding: 'utf8',
+  });
+  assert.equal(out.trim().includes('\n'), false, 'compact format must be a single line, unlike the pretty-printed report');
+  const result = JSON.parse(out);
+  assert.ok(typeof result.score === 'number');
+});
+
+test('directory mode, --mode report: aggregates every .md/.txt/.mdx file in the directory with a real average score', () => {
+  const out = execFileSync(process.execPath, [DETECT, '--mode', 'report', FIXTURES], { cwd: FIXTURES, encoding: 'utf8' });
+  const result = JSON.parse(out);
+  assert.equal(result.isDirectory, true);
+  assert.ok(Array.isArray(result.files) && result.files.length >= 2, 'fixtures directory has multiple top-level .md files');
+  assert.ok(typeof result.score === 'number');
+  const expectedAverage = Math.round(result.files.reduce((sum, f) => sum + f.score, 0) / result.files.length);
+  assert.equal(result.score, expectedAverage);
+});
+
+test('directory mode, --mode score: compact { score, files } shape, not the full report', () => {
+  const out = execFileSync(process.execPath, [DETECT, '--mode', 'score', FIXTURES], { cwd: FIXTURES, encoding: 'utf8' });
+  const result = JSON.parse(out);
+  assert.ok(typeof result.score === 'number');
+  assert.ok(Array.isArray(result.files));
+  assert.ok(result.files.every((f) => typeof f.target === 'string' && typeof f.score === 'number'));
+});
+
+test('directory mode, --mode scan: returns occurrences per file, tier-suppression bypassed, no averaged score field', () => {
+  const out = execFileSync(process.execPath, [DETECT, '--mode', 'scan', FIXTURES], { cwd: FIXTURES, encoding: 'utf8' });
+  const result = JSON.parse(out);
+  assert.equal(result.isDirectory, true);
+  assert.ok(Array.isArray(result.files));
+  assert.ok(!('score' in result), 'scan mode aggregates occurrences, not an averaged score');
+  assert.ok(result.files.every((f) => Array.isArray(f.occurrences)));
+});
+
+test('directory mode with no scannable files: clear error, exit 1, no empty-directory silent success', () => {
+  const emptyDir = join(FIXTURES, 'empty-for-detect-test');
+  mkdirSync(emptyDir, { recursive: true });
+  try {
+    const { status, stderr } = spawnSync(process.execPath, [DETECT, '--mode', 'report', emptyDir], { cwd: FIXTURES, encoding: 'utf8' });
+    assert.equal(status, 1);
+    assert.match(stderr, /no \.md\/\.txt\/\.mdx files found/);
+  } finally {
+    rmSync(emptyDir, { recursive: true, force: true });
+  }
+});
+
+// ---- baseline mode (--save-baseline / --baseline) ----
+
+test('--save-baseline writes a snapshot file of the current hits', () => {
+  const baselinePath = join(FIXTURES, 'baseline-snapshot-test.json');
+  try {
+    if (existsSync(baselinePath)) rmSync(baselinePath);
+    run('ai-heavy-sample.md', ['--save-baseline', baselinePath]);
+    assert.ok(existsSync(baselinePath), '--save-baseline must actually write the file');
+    const saved = JSON.parse(readFileSync(baselinePath, 'utf8'));
+    assert.ok(Array.isArray(saved.hits) && saved.hits.length > 0, 'fixture has known hits to snapshot');
+  } finally {
+    if (existsSync(baselinePath)) rmSync(baselinePath);
+  }
+});
+
+test('--baseline reports only hits new since the snapshot, not the ones already captured', () => {
+  const baselinePath = join(FIXTURES, 'baseline-diff-test.json');
+  try {
+    const full = run('ai-heavy-sample.md', ['--save-baseline', baselinePath]);
+    assert.ok(full.hits.length > 0, 'fixture must have hits for this test to mean anything');
+
+    const diffed = run('ai-heavy-sample.md', ['--baseline', baselinePath]);
+    assert.equal(diffed.hits.length, 0, 'scanning the same file against its own just-saved baseline must show zero new hits');
+    // The score itself is computed from allHits, not reportedHits (see
+    // scripts/lib/report.mjs's runFile), so it must be unchanged by the
+    // baseline diff, only the reported hit list narrows.
+    assert.equal(diffed.score, full.score);
+  } finally {
+    if (existsSync(baselinePath)) rmSync(baselinePath);
+  }
+});
+
+test('--baseline pointing at a nonexistent snapshot file is a no-op (all hits still reported), not an error', () => {
+  const result = run('ai-heavy-sample.md', ['--baseline', join(FIXTURES, 'does-not-exist-baseline.json')]);
+  const full = run('ai-heavy-sample.md');
+  assert.equal(result.hits.length, full.hits.length);
+});
+
+test('.clearfelt/domain.md target_grade_level_min/max overrides clearfelt.config.md\'s shipped 6-12 default for readability.withinTargetRange', () => {
+  acquireLock();
+  const clearfeltDir = join(FIXTURES, '.clearfelt');
+  const domainPath = join(clearfeltDir, 'domain.md');
+  const alreadyExisted = existsSync(clearfeltDir);
+
+  try {
+    const withoutDomain = run('human-sample.md');
+
+    mkdirSync(clearfeltDir, { recursive: true });
+    // A deliberately extreme, narrow range that the fixture's real grade
+    // level should NOT fall inside, so the override is verifiably taking
+    // effect rather than coincidentally matching the shipped 6-12 default.
+    writeFileSync(domainPath, ['# Domain profile', '', '## Target reading level', '', '- target_grade_level_min: 30', '- target_grade_level_max: 32', ''].join('\n'));
+
+    const withDomain = run('human-sample.md');
+    assert.equal(withDomain.readability.fleschKincaidGrade, withoutDomain.readability.fleschKincaidGrade, 'the domain override changes the target range, not the measured grade level itself');
+    assert.equal(withDomain.readability.withinTargetRange, false, 'a real document should not happen to sit inside a 30-32 grade-level band');
+  } finally {
+    if (existsSync(domainPath)) rmSync(domainPath);
+    if (!alreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+    releaseLock();
   }
 });

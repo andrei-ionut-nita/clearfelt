@@ -21,19 +21,19 @@ Four tiers, replacing the old conservative/aggressive pair. The config value is 
 | `full_rewrite` | Full rewrite | Everything in Balanced, plus deliberate sentence-length variation, a shift toward collective pronouns ("we" instead of "the user"), and addressing the "Qualitative signals" in `reference/audit.md` (frictionless claims, narrative idiosyncrasy, episodic grounding, cognitive friction) as real rewrite targets, not just a reasoning note. Paragraph count and order still preserved. |
 | `structural_rework` | Structural rework | Everything in Full rewrite, plus willing to add missing paragraph breaks, split or merge paragraphs, reorder sentences within a paragraph, and trim throat-clearing or padding sentences for real conciseness. Still bounded by the no-fabrication rule and voice-profile precedence, same as every other tier. |
 
-The score at each tier is computed from the actual resulting text, the same way every other clearfelt score is, never assigned by which tier ran. On most real documents this scope escalation produces real, substantial score increases tier over tier, since each tier removes strictly more of what the score actually deducts for, but it's an earned consequence of what changed, not a guaranteed number.
+Two things to know about how these tiers behave, not choices to make:
 
-These four tiers are the one rewrite-scope system; if you've seen a "no-touch / minimal-touch / transform / aggressive" naming elsewhere (an earlier v0.3 planning document used that language), it describes the same ladder, not a second one: `light_touch` and `balanced` are the minimal-touch end (scored hits only, then the full dictionary, never restructuring), `full_rewrite` is transform, `structural_rework` is the aggressive end. "No-touch" (skip rewriting entirely) already exists too, as declining to run `/clearfelt rewrite` at all, or `risk_tier: sensitive`'s hedge/qualifier protection for the spans it covers, not a fifth tier.
+- The score at each tier is computed from the actual resulting text, the same way every other clearfelt score is, never assigned by which tier ran. Scope escalation usually produces real score increases tier over tier, since each tier removes strictly more of what the score deducts for, but that's an earned consequence of what changed, not a guaranteed number.
+- If you've seen a "no-touch / minimal-touch / transform / aggressive" naming elsewhere (an earlier v0.3 planning document used it), it's the same ladder under different names, not a second system. `light_touch` and `balanced` are the minimal-touch end, `full_rewrite` is transform, `structural_rework` is the aggressive end. "No-touch" already exists too, as declining to run `/clearfelt rewrite` at all, or as `risk_tier: sensitive`'s hedge/qualifier protection for the spans it covers, not a fifth tier.
 
-**Resolution order**, checked in Pass 1 before any rewriting happens:
+**Resolving which tier runs**, checked in Pass 1 before any rewriting happens:
 
-1. `.clearfelt/domain.md`'s `preferred_intensity` field, if present (project-level, shared by everyone on the project).
-2. `~/.clearfelt/settings.md`'s `intensity` and `rewrite.ask_intensity`, if present (a user's own global save, see "Saving a preference" below).
-3. `clearfelt.config.md`'s shipped default (`rewrite.ask_intensity: true`, meaning: ask).
-
-If nothing resolves to a fixed choice, **ask**: present the to-do preview (the hit list from `scripts/detect.mjs`, following [reference/output-format.md](output-format.md)'s to-do-list template) alongside the four-tier table above, and let the user pick. Then ask a second, separate question: save this choice? No, save it globally, or save it for this project only. Don't save anything without an explicit answer to that second question.
-
-If a preference already resolved, skip the question: show the to-do preview as a brief FYI, state which intensity is running and why (saved preference, and its scope), and proceed without blocking.
+1. Check `.clearfelt/domain.md`'s `preferred_intensity` field. If set, use it (project-level, shared by everyone on the project).
+2. Otherwise check `~/.clearfelt/settings.md`'s `intensity` and `rewrite.ask_intensity`. If set, use it (a user's own global save, see "Saving a preference" below).
+3. Otherwise fall back to `clearfelt.config.md`'s shipped default, `rewrite.ask_intensity: true`, which means: ask.
+4. If a preference resolved from step 1 or 2, skip the question: show the to-do preview as a brief FYI, state which intensity is running and why (saved preference, and its scope), and proceed without blocking.
+5. If nothing resolved, ask. Present the to-do preview (the hit list from `scripts/detect.mjs`, following [reference/format/rewrite.md](format/rewrite.md)'s intensity-question template) alongside the four-tier table above, and let the user pick.
+6. After the user picks, ask a second, separate question: save this choice? No, save it globally, or save it for this project only. Don't save anything without an explicit answer to that second question.
 
 ## Saving a preference, and surviving a skill update
 
@@ -46,9 +46,31 @@ Wrap any span in a target file with `<!-- clearfelt-lock -->` and `<!-- /clearfe
 
 A rule hit inside a locked span still counts in `/clearfelt audit`'s score and report exactly as it would anywhere else, locking a span changes what `/clearfelt rewrite` is willing to touch, not what `scripts/detect.mjs` reports or scores. The markers themselves are ordinary HTML comments, invisible in rendered Markdown, and are left in place by `/clearfelt rewrite`, not stripped, so the same region stays protected on the next run too.
 
+## Constraints
+
+A locked span guarantees specific *content* survives a rewrite. A constraint is the same guarantee for the *shape* of the output instead: a character or word ceiling, a required substring, a forbidden pattern. Without one, a scrub pass can silently push a candidate past a platform's actual limit (a tweet, a meta description, an SMS) with nothing catching it.
+
+Two ways to declare one, usable together:
+
+- **Inline, zero-setup**: `--max-chars <n>`, `--max-words <n>`, `--must-contain <text-or-/regex/>`, `--must-not-contain <text-or-/regex/>` on the `/clearfelt rewrite` invocation. `--must-contain`/`--must-not-contain` can repeat.
+- **Named, reusable**: `.clearfelt/constraints/<name>.md` (copy `templates/constraints.example.md`), referenced with `--constraints <name>`. Inline flags layer on top rather than replacing a named set: `--max-chars`/`--max-words` override the file's own value, `--must-contain`/`--must-not-contain` add to its lists.
+
+Every scrub pass in the loop below should target an active constraint directly, aiming the rewrite at the limit rather than just hoping it lands under it, the same way it already respects a locked span mid-loop instead of only checking afterward. This is verified for real, not just by instruction: the same `scripts/check.mjs` call the "Preservation checking" section below describes checks it. Exceeding `max_chars`/`max_words` always blocks the write. A `must_contain`/`must_not_contain` miss blocks by default too, `check.hard_fail_on_constraint_violation` in `clearfelt.config.md`, on by default unlike the fact-preservation toggles below, since a constraint is something the user explicitly declared, not a heuristic guess.
+
 ## Preservation checking
 
-The no-fabrication rule and locked-span guarantee below are not enforced by prompt instruction alone. Pass 3 of `prompts/audit_loop.xml` writes the current candidate to `.clearfelt/candidate.md` and runs `node scripts/check.mjs --before <path> --after .clearfelt/candidate.md`, which deterministically diffs the source against the candidate: every `<!-- clearfelt-lock -->` span is checked for byte-identical content (a mismatch always blocks the write, see `check.hard_fail_on_locked_span_mismatch` in `clearfelt.config.md`), and a regex-based fingerprint of numbers, dates, proper nouns, and quoted material is compared before and after (a mismatch there warns by default, `check.hard_fail_on_dropped_fact` / `check.hard_fail_on_added_fact` can make it block instead). The fingerprint check is heuristic, not real named-entity recognition, this repo stays dependency-free (`CLAUDE.md`), so it will miss some things and occasionally flag a change that's actually fine; see `docs/decisions/0016-preservation-checker.md` for the specific tradeoffs. A `warn` verdict surfaces in the confirmation view's "Preservation check" section (`reference/output-format.md`) rather than blocking; a `fail` verdict (always locked-span mismatches, optionally fingerprint mismatches if configured) stops the run before the confirmation view is shown at all.
+The no-fabrication rule, locked-span guarantee, and any active constraints are not enforced by prompt instruction alone. Pass 3 of `prompts/audit_loop.xml` writes the current candidate to `.clearfelt/candidate.md` and runs `node scripts/check.mjs --before <path> --after .clearfelt/candidate.md [constraint flags]`, which deterministically diffs the source against the candidate:
+
+- Every `<!-- clearfelt-lock -->` span is checked for byte-identical content. A mismatch always blocks the write, see `check.hard_fail_on_locked_span_mismatch` in `clearfelt.config.md`.
+- A regex-based fingerprint of numbers, dates, proper nouns, and quoted material is compared before and after. A mismatch warns by default; `check.hard_fail_on_dropped_fact` / `check.hard_fail_on_added_fact` can make it block instead.
+- Any constraint from the section above is checked against the actual candidate text.
+
+The fingerprint check is heuristic, not real named-entity recognition (this repo stays dependency-free, `CLAUDE.md`): it will miss some things and occasionally flag a change that's actually fine, see `docs/decisions/0016-preservation-checker.md` for the specific tradeoffs. Constraint checks are not heuristic: a character count and a substring/regex match are exact.
+
+Two verdicts:
+
+- **`warn`**: surfaces in the confirmation view's "Preservation check" section ([reference/format/rewrite.md](format/rewrite.md)); doesn't block the write.
+- **`fail`**: stops the run before the confirmation view is shown at all. Always triggered by a locked-span mismatch or a length-constraint overshoot. Also triggered by a fingerprint mismatch or a content-constraint miss when `check.hard_fail_on_dropped_fact` / `check.hard_fail_on_added_fact` / `check.hard_fail_on_constraint_violation` are configured on.
 
 ## Risk tier
 
@@ -63,7 +85,7 @@ Default is `standard` (no restriction beyond the normal tier scoping). This is a
 
 `rewrite.require_confirmation` in `clearfelt.config.md` defaults to `true`. This is the safe default and should not be treated as optional in practice, and is a separate, later checkpoint from the intensity question above, not a replacement for it:
 
-1. Present a plain-language verdict and before/after score first, following [reference/output-format.md](output-format.md)'s `/clearfelt rewrite` template: `## Before` and `## After` as separate headed sections (not run into one line), a "What changed, and why" bullet list, not a prose paragraph explaining the diff.
+1. Present a plain-language verdict and before/after score first, following [reference/format/rewrite.md](format/rewrite.md)'s result template: `## Before` and `## After` as separate headed sections (not run into one line), a "What changed, and why" bullet list, not a prose paragraph explaining the diff.
 2. If the resulting score would be misleading on its own (for example, a clean pass driven by a narrow rule dictionary rather than an actually-fixed piece), say so as its own bullet under "What changed, and why." Don't let a good number stand in for a read of the actual text.
 3. Ask explicitly whether to apply the change to `<path>`. Don't proceed on an ambiguous or ignored response.
 4. On approval, write the file, then append one line to `.clearfelt/audit.log` (create it if it doesn't exist yet; it's gitignored the same way as the rest of `.clearfelt/`, machine-written state, not something a human hand-edits): `<ISO timestamp>  <path>  intensity=<tier>  score <before>-><after>  approved=yes`. This is the only durable record that a write happened, a single interactive confirmation doesn't survive past the terminal session on its own. On decline, discard the candidate rewrite, write nothing, and don't log a line either since nothing changed; offer to revise (a different intensity, or targeting specific spans) if the user wants another attempt.
