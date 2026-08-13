@@ -1,10 +1,10 @@
 # Voice profile
 
-Copy this file to `.clearfelt/voice-profile.md` in your own project (or run `/clearfelt setup`, which writes it for you). `/clearfelt humanize` reads it before rewriting anything, and a preference stated here always wins over the shipped rule files.
+Copy this file to `.clearfelt/voice-profile.md` in your own project (or run `/clearfelt setup`, which writes it for you). `/clearfelt rewrite` reads it before rewriting anything, and a preference stated here always wins over the shipped rule files.
 
 ## Words I want to keep using
 
-List words or phrases here that the base rule files would otherwise flag but that you actually like. One per line. `/clearfelt humanize` will never touch these.
+List words or phrases here that the base rule files would otherwise flag but that you actually like. One per line. `/clearfelt rewrite` will never touch these.
 
 - (example) "honestly," as a sentence opener
 

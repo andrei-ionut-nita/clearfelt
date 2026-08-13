@@ -43,14 +43,16 @@ node scripts/hook.mjs off
 ## Testing pin/unpin
 
 ```bash
-node scripts/pin.mjs pin humanize
-ls .claude/skills/clearfelt-humanize/
-node scripts/pin.mjs unpin humanize
+node scripts/pin.mjs pin rewrite
+ls .claude/skills/clearfelt-rewrite/
+node scripts/pin.mjs unpin rewrite
 ```
 
-`unpin` only removes a skill directory if its `SKILL.md` contains the `<!-- clearfelt-pinned-skill -->` marker, so it never deletes a real user skill by accident. Verify that behavior specifically if you touch `pin.mjs`.
+`unpin` only removes a skill directory if its `SKILL.md` contains the `<!-- clearfelt-pinned-skill -->` marker, so it never deletes a real user skill by accident. `pin` mirrors the same guard on the write side: it refuses to overwrite a `SKILL.md` that already exists at the target path and lacks the marker, so pinning never clobbers an unrelated skill someone already has at `clearfelt-<command>`. Verify both behaviors specifically if you touch `pin.mjs`; `tests/pin.test.mjs` covers both against a throwaway project directory.
 
 ## Testing the XML pipeline
+
+`node scripts/lint.mjs` (see below) checks tag balance with no extra dependency. For a second opinion, or if you don't trust a hand-rolled tag-balance check on its own:
 
 ```bash
 python3 -c "import xml.etree.ElementTree as ET; ET.parse('prompts/audit_loop.xml'); print('OK')"
@@ -58,8 +60,17 @@ python3 -c "import xml.etree.ElementTree as ET; ET.parse('prompts/audit_loop.xml
 
 `prompts/audit_loop.xml` is the only non-Markdown file in the repo on purpose. See [decisions/0003-xml-pipeline-format.md](decisions/0003-xml-pipeline-format.md).
 
+## Running the linter
+
+```bash
+node scripts/lint.mjs
+```
+
+Checks, in one pass, everything `docs/decisions/0010`'s test-suite ADR called out as missing: `SKILL.md` frontmatter (required fields, non-standard fields as a warning), `prompts/audit_loop.xml` tag balance, every rule's `source:` key resolving to a real row in `docs/SOURCES.md`, every `clearfelt.config.md` row actually being read somewhere in `scripts/`, and the em-dash prohibition across the whole repo (not just the diff). Zero dependencies, same rule as `scripts/detect.mjs`. Exits 1 if anything fails; warnings don't fail the run but are worth reading, they're often the same bug shape a future failure will be.
+
 ## Before opening a PR
 
-- No em-dash characters anywhere in the diff. This project enforces the same rule it detects: check every file you touched with `grep -rn "—" .` before committing.
+- Run `node --test`, `node scripts/eval.mjs`, and `node scripts/lint.mjs`. All three, not just the one that seems relevant: `lint.mjs` in particular catches config-to-code drift and dead rule sources that `node --test` won't, since nothing in the test suite exercises every config row or every rule file.
+- No em-dash characters anywhere in the diff, `scripts/lint.mjs` checks the whole repo, not just your diff, but check your own changes specifically before running it on everything.
 - No JSON in any user-facing rule or config file. See [decisions/0002-markdown-only-data-files.md](decisions/0002-markdown-only-data-files.md) for why.
 - If you added a rule, follow the format and severity/tier guidance in [CONTRIBUTING.md](../CONTRIBUTING.md).

@@ -11,3 +11,6 @@ Marketing-flavored words that inflate a claim without adding information, from a
 - synergistic | severity: 6 | tier: 2 | source: clearfelt-heuristic
 - paradigm shift | severity: 6 | tier: 2 | source: clearfelt-heuristic
 - paradigm-shattering | severity: 7 | tier: 1 | source: clearfelt-heuristic
+- pave the way | severity: 6 | tier: 1 | source: clearfelt-heuristic
+- unwavering commitment | severity: 6 | tier: 1 | source: clearfelt-heuristic
+- multi-faceted approach | severity: 5 | tier: 2 | source: clearfelt-heuristic

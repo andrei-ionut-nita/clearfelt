@@ -13,3 +13,7 @@ Short records of the real calls made while designing clearfelt, kept here so the
 - [0009: A four-tier intensity ladder, asked upfront, saved somewhere that survives an update](0009-intensity-ladder-and-saved-preference.md)
 - [0010: A risk tier for sensitive documents, an automated test suite, and a lightweight eval set](0010-risk-tier-and-test-suite.md)
 - [0011: Cap rule-hit deduction, rescale the statistical signal weights, defer percentile rescaling](0011-deduction-cap-and-signal-rebalance.md)
+- [0012: Length-normalized vocabulary diversity (Root TTR), plus lexicon additions](0012-length-normalized-vocabulary-diversity.md)
+- [0013: writing.md and voice.md as root-level product doctrine](0013-writing-and-voice-doctrine.md)
+- [0014: Multi-dimensional scoring, what shipped and what didn't](0014-multi-dimensional-scoring-scope.md)
+- [0015: Locked spans, a per-span preservation guarantee](0015-locked-spans.md)

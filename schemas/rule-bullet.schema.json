@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clearfelt/schemas/rule-bullet.schema.json",
+  "title": "clearfelt rule bullet",
+  "description": "Documents the shape of a single bullet line under rules/antipatterns/*.md and rules/banned_words/*.md, parsed by scripts/lib/rules.mjs's parseBulletLine(). Rule files stay Markdown, not JSON (see docs/decisions/0002-markdown-only-data-files.md and CLAUDE.md's 'no JSON in user-facing rule or config files' rule); this schema is documentation and a target for scripts/lint.mjs's targeted checks, not a file clearfelt reads or a generic JSON-Schema validator this repo runs (dependency-free, per CLAUDE.md). A bullet line has the literal form: - \"pattern\" | severity: N | tier: N | source: key | regex: true",
+  "type": "object",
+  "required": ["pattern", "severity", "source"],
+  "properties": {
+    "pattern": {
+      "type": "string",
+      "description": "The literal text or (if regex is \"true\") the regular expression to match. May not contain a literal | character; the bullet-line format splits on | with no escaping."
+    },
+    "severity": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9,
+      "default": 5,
+      "description": "How many points a hit costs before category-weight multiplication (see clearfelt.config.md's Category severity weights). Defaults to 5 when the bullet omits it."
+    },
+    "tier": {
+      "type": "integer",
+      "enum": [1, 2, 3],
+      "default": 1,
+      "description": "Tier 1 always counts. Tier 2 only counts near another hit (tier2_cluster_window). Tier 3 only counts once it recurs (tier3_density_threshold). Defaults to 1 when the bullet omits it."
+    },
+    "source": {
+      "type": "string",
+      "description": "A key resolved in docs/SOURCES.md. Every shared rule must carry one (docs/decisions/0005-sourced-rules.md); personal .local.md overrides are exempt."
+    },
+    "regex": {
+      "type": "string",
+      "const": "true",
+      "description": "Deliberately a string, not a JSON boolean: parseBulletLine() compares rule.regex === 'true' as a string, matching how every other field arrives from Markdown bullet parsing. When present, pattern is used as a raw regular expression instead of literal/inflected text matching. Omit this field entirely for a literal-text or single-word rule; do not write \"regex: false\"."
+    }
+  }
+}

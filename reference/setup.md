@@ -33,10 +33,11 @@ Run once per project, independent of voice mode; a domain profile is shared by e
 1. Check whether `.clearfelt/domain.md` already exists. If it does, show its current contents before asking anything.
 2. Ask:
    - A sentence or two describing the subject domain (e.g. "software engineering / developer tooling," "healthcare," "general audience"). Offer to skip this and use bundled (empty) defaults.
+   - Optionally, which of technical, marketing, support, executive, personal, or sensitive this project's writing mostly is (see "Mode" in `templates/domain.example.md`). This is context for `/clearfelt rewrite`'s qualitative judgment, not a separate switch; if the user says sensitive, ask the risk-tier question below too rather than assuming mode covers it.
    - Any technical terms that should never be flagged even though the shared rule files would otherwise catch them (these become entries under "Technical terms exempt from flagging"). Give one or two concrete examples from `rules/banned_words/` or `rules/antipatterns/` to prompt for real answers, don't leave this abstract.
    - Optionally, a target reading grade-level range for this project's audience, if the user has one in mind. Skip if they don't; the shipped default in `clearfelt.config.md` applies instead.
-   - Optionally, a preferred `/clearfelt humanize` intensity for this project (see the four-tier table in `reference/humanize.md`). This is the same thing `/clearfelt humanize`'s own save prompt can set later; asking here just saves a step for someone who already knows what they want.
-   - Optionally, whether this project's writing is legally or reputationally sensitive (shareholder letters, regulatory filings, anything reviewed by Legal). If so, set `risk_tier: sensitive`, see `reference/humanize.md`'s "Risk tier" section for what this changes. Default is `standard`, don't ask this as a scary gate, just a plain question.
+   - Optionally, a preferred `/clearfelt rewrite` intensity for this project (see the four-tier table in `reference/rewrite.md`). This is the same thing `/clearfelt rewrite`'s own save prompt can set later; asking here just saves a step for someone who already knows what they want.
+   - Optionally, whether this project's writing is legally or reputationally sensitive (shareholder letters, regulatory filings, anything reviewed by Legal). If so, set `risk_tier: sensitive`, see `reference/rewrite.md`'s "Risk tier" section for what this changes. Default is `standard`, don't ask this as a scary gate, just a plain question.
 3. Write or update `.clearfelt/domain.md` using the structure in `templates/domain.example.md`.
 
 ## Wrap-up

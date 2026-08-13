@@ -5,6 +5,9 @@ rules/banned_words.local.md
 # Per-project voice profile and other clearfelt state
 .clearfelt/
 
+# Opt-in saved artifacts (audit reports, eval trend data), never a default write target
+reports/
+
 # Machine-local Claude Code settings (hook installs live here)
 .claude/settings.local.json
 

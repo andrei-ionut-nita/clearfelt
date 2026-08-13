@@ -1,0 +1,1 @@
+Sorry for the wait on this. Looked into it, the export was failing because the date field had two different formats mixed in from the old importer. I patched the parser to handle both, re-ran your export, and it's attached. Let me know if the numbers look off anywhere, I only spot-checked the first fifty rows.

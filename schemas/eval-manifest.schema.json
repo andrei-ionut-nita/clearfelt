@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clearfelt/schemas/eval-manifest.schema.json",
+  "title": "clearfelt eval manifest",
+  "description": "Documents tests/fixtures/eval/manifest.json's shape, read by scripts/eval.mjs. Not a validation engine this repo runs against the file (see CLAUDE.md's dependency-free rule; scripts/lint.mjs does a small hand-written check instead, not generic JSON-Schema interpretation). Primary purpose: editor autocomplete/validation via the manifest's own \"$schema\" field, and a single documented source of truth for the shape instead of only prose.",
+  "type": "object",
+  "required": ["note", "fixtures"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "note": {
+      "type": "string",
+      "description": "Explains this is a machine-written manifest, not a hand-edited rule/config file, and what the score bands mean."
+    },
+    "fixtures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "label"],
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string",
+            "description": "Filename under tests/fixtures/eval/, e.g. \"ai-1.md\"."
+          },
+          "label": {
+            "type": "string",
+            "enum": ["ai", "human"],
+            "description": "Ground-truth label: is this fixture AI-heavy or human-written prose."
+          },
+          "expectedMin": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "The Human Score this fixture should meet or exceed. Used for human-labeled fixtures."
+          },
+          "expectedMax": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "The Human Score this fixture should be at or below. Used for ai-labeled fixtures."
+          },
+          "bucket": {
+            "type": "string",
+            "description": "Optional self-labeled content-type tag (e.g. \"support\", \"executive\", \"sensitive\"), not a multi-reviewer-panel label. Added on ai-6/human-6 onward, absent on earlier fixtures."
+          }
+        }
+      }
+    }
+  }
+}

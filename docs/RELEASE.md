@@ -21,7 +21,7 @@ clearfelt uses plain tags (`v0.1.0`, not `skill-v0.1.0`) since there's only one 
    - **"Architecture"** diagram lists every top-level file or directory a new contributor would actually find (add a line for anything new: a `tests/` directory, a new `scripts/*.mjs`, a new top-level config file).
    - **"Customization"** covers any new hand-editable setting or file (a new `.clearfelt/*` field, a new `clearfelt.config.md` section).
    - Do the same staleness check on `SKILL.md`'s "Configuration" line and `CLAUDE.md`'s architecture notes, both name specific settings and files by hand and drift the same way README does.
-4. **Run the full verification pass** from [DEVELOP.md](DEVELOP.md): `node --test`, `node scripts/eval.mjs`, `detect.mjs` against a sample file, the hook on/off round-trip, the pin/unpin round-trip, the XML well-formedness check, and the em-dash scan across the whole repo.
+4. **Run the full verification pass** from [DEVELOP.md](DEVELOP.md): `node --test`, `node scripts/eval.mjs`, `node scripts/lint.mjs` (frontmatter, XML well-formedness, rule-source completeness, config-to-code drift, and the em-dash scan across the whole repo, all in one command), `detect.mjs` against a sample file, the hook on/off round-trip, and the pin/unpin round-trip. CI (`.github/workflows/ci.yml`) runs the first three on every push and PR, but a tag should still get one direct local run before it's pushed.
 5. **Commit.** A single commit covering the version bump, changelog entry, and README/doc sync is fine; don't bundle unrelated feature work into a release commit.
 6. **Tag.**
    ```bash

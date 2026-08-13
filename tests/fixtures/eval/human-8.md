@@ -1,0 +1,1 @@
+The parties acknowledge that, notwithstanding anything to the contrary herein, this provision shall survive termination of the agreement. Either party may terminate for cause upon thirty days' written notice, provided the breaching party has not cured such breach within the notice period. Nothing in this section shall be construed to limit either party's remedies at law.

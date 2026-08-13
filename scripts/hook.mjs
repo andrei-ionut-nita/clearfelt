@@ -18,8 +18,8 @@
  *   node scripts/hook.mjs   (no args: runtime hook body, reads stdin)
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
-import { join, dirname, resolve } from 'node:path';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, realpathSync } from 'node:fs';
+import { join, dirname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
@@ -32,7 +32,7 @@ const TEXT_EXTENSIONS = new Set(['.md', '.mdx', '.txt']);
 
 const ACTIONS = new Set(['status', 'on', 'off', 'ignore-rule', 'ignore-file', 'reset']);
 
-function readState() {
+export function readState() {
   const defaults = { enabled: false, quiet: false, ignoreRules: [], ignoreFiles: [] };
   if (!existsSync(STATE_FILE)) return defaults;
   const text = readFileSync(STATE_FILE, 'utf8');
@@ -146,6 +146,20 @@ function runAdmin(action, arg) {
   }
 }
 
+// Defense in depth: the PostToolUse payload's file_path already came from
+// Claude's own Edit/Write/MultiEdit call, so this mostly guards against a
+// future or unexpected payload shape rather than a live attack today.
+// Fails closed (false) on anything unresolvable, rather than assuming safe.
+function isWithinCwd(candidatePath) {
+  try {
+    const cwdReal = realpathSync(process.cwd());
+    const candidateReal = realpathSync(candidatePath);
+    return candidateReal === cwdReal || candidateReal.startsWith(cwdReal + sep);
+  } catch {
+    return false;
+  }
+}
+
 function globToRegExp(glob) {
   const escaped = glob.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.');
   return new RegExp(`^${escaped}$`);
@@ -174,6 +188,7 @@ function runHookBody() {
   if (!TEXT_EXTENSIONS.has(ext)) return;
   if (state.ignoreFiles.some((glob) => globToRegExp(glob).test(filePath))) return;
   if (!existsSync(filePath)) return;
+  if (!isWithinCwd(filePath)) return;
 
   const result = spawnSync('node', [join(ROOT, 'scripts', 'detect.mjs'), '--mode', 'report', filePath], {
     encoding: 'utf8',
@@ -210,4 +225,7 @@ function main() {
   runHookBody();
 }
 
-main();
+// Guarded so `import { readState } from './hook.mjs'` (used by
+// scripts/explain.mjs) never triggers admin actions or the PostToolUse hook
+// body as a side effect of loading the module for its state reader.
+if (import.meta.url === `file://${process.argv[1]}`) main();

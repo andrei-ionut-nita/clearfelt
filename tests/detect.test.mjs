@@ -35,19 +35,33 @@ function run(fixture, extraArgs = []) {
 }
 
 test('ai-heavy-sample.md: known hits, deduction, and wall-of-text penalty', () => {
+  // These numbers moved twice since this test was first written:
+  // 1. score 60 to 31, hits 4 to 9, when tier2_cluster_window was wired up
+  //    for real: the old approximation only counted a tier-2 word as a hit
+  //    when the SAME word repeated, so single-occurrence tier-2 words
+  //    (testament, seamless, unlock, synergistic, paradigm shift) were all
+  //    silently suppressed even though this fixture is one dense paragraph
+  //    where they all sit well within any reasonable cluster window of
+  //    each other, exactly the case tier-2 is supposed to catch.
+  // 2. score 31 to 23, hits 9 to 10, when "pave the way" (this fixture
+  //    already contains it: "we can pave the way for a paradigm shift")
+  //    was added to puffery_lexicon.md, and vocabulary diversity switched
+  //    from raw TTR to length-normalized Root TTR with a rescaled weight
+  //    (docs/decisions/0012-length-normalized-vocabulary-diversity.md),
+  //    both while closing the eval recall gap.
   const result = run('ai-heavy-sample.md');
-  assert.equal(result.score, 60);
-  assert.equal(result.breakdown.deduction, 28);
-  assert.equal(result.breakdown.deductionApplied, 28);
+  assert.equal(result.score, 23);
+  assert.equal(result.breakdown.deduction, 63);
+  assert.equal(result.breakdown.deductionApplied, 63);
   assert.equal(result.breakdown.deductionCapped, false);
   assert.equal(result.breakdown.wallOfTextPenalty, 15);
   assert.equal(result.breakdown.paragraphCount, 1);
   assert.deepEqual(result.categoryCounts, {
     fake_profound_closers: 1,
-    high_frequency_lexicon: 2,
-    puffery_lexicon: 1,
+    high_frequency_lexicon: 3,
+    puffery_lexicon: 6,
   });
-  assert.equal(result.hits.length, 4);
+  assert.equal(result.hits.length, 10);
 });
 
 test('ai-heavy-sample.md: impacts and category points are sorted by magnitude, descending', () => {
@@ -60,12 +74,15 @@ test('ai-heavy-sample.md: impacts and category points are sorted by magnitude, d
   assert.equal(impacts.some((row) => row.impact === 0), false, 'a zero-impact factor should be omitted, not printed as 0');
 
   const points = result.categoryPoints;
-  assert.equal(points[0].category, 'high_frequency_lexicon'); // delve (8) + tapestry (7) = 15, the fixture's largest category subtotal
+  // seamless (6) + unlock (5) + in conclusion (7) + synergistic (6) + paradigm shift (6)
+  // + pave the way (6) = 36, the fixture's largest category subtotal now that
+  // tier-2 clustering counts them all and "pave the way" is in the lexicon.
+  assert.equal(points[0].category, 'puffery_lexicon');
   for (let i = 1; i < points.length; i++) {
     assert.ok(points[i - 1].points >= points[i].points, 'categoryPoints must be sorted descending');
   }
 
-  assert.equal(result.patternSummary.length, 4); // one row per distinct pattern, matching the 4 hits in this fixture
+  assert.equal(result.patternSummary.length, 10); // one row per distinct pattern, matching the 10 hits in this fixture
   for (const row of result.patternSummary) {
     assert.equal(row.occurrences, row.lines.length, `${row.pattern}: occurrences must match the number of recorded lines`);
   }
@@ -91,6 +108,27 @@ test('human-sample.md: no rule hits, clean score, multiple paragraphs', () => {
   assert.ok(result.score >= 85, `expected score >= 85, got ${result.score}`);
 });
 
+test('template-patterns-sample.md: regex bullets fire on real text, not just their bracketed example', () => {
+  // Round-9-era bug: binary_contrasts.md and structural_tells.md bullets
+  // like "It's not X. It's Y." and "colon-reveal: The best part: it
+  // learns." were matched as literal strings (capital X/Y, the label
+  // prefix and all), so they could never fire on real prose. Fixed by
+  // giving these bullets `regex: true` and rewriting them as actual
+  // regexes; this fixture exercises each one with a fresh sentence, not
+  // the exact example text from the rule file, to prove the pattern
+  // generalizes rather than only matching its own doc comment.
+  const result = run('template-patterns-sample.md');
+  const categories = result.hits.map((h) => h.category);
+  assert.ok(categories.includes('binary_contrasts'), 'expected at least one binary_contrasts hit');
+  assert.ok(categories.includes('structural_tells'), 'expected at least one structural_tells hit');
+  // 4 distinct binary_contrasts patterns in the fixture ("It's not X. It's
+  // Y.", "This isn't just [X]. It's [Y].", "It's not about X, it's about
+  // Y.", "X isn't the point. Y is."), plus the colon-reveal and
+  // dramatic-fragment structural_tells patterns.
+  const binaryHits = result.hits.filter((h) => h.category === 'binary_contrasts');
+  assert.ok(binaryHits.length >= 4, `expected at least 4 binary_contrasts hits, got ${binaryHits.length}`);
+});
+
 test('regression: category severity weights from config actually multiply the deduction', () => {
   // Round-9 bug: loadConfig() never parsed the "Category severity weights"
   // section, and computeScore looked up a `weight_<category>` key that was
@@ -105,8 +143,8 @@ test('regression: category severity weights from config actually multiply the de
 
   try {
     const baseline = run('ai-heavy-sample.md');
-    const puffuryHit = baseline.hits.find((h) => h.category === 'puffery_lexicon');
-    assert.ok(puffuryHit, 'fixture must contain a puffery_lexicon hit for this test to mean anything');
+    const puffuryHits = baseline.hits.filter((h) => h.category === 'puffery_lexicon');
+    assert.ok(puffuryHits.length > 0, 'fixture must contain a puffery_lexicon hit for this test to mean anything');
 
     if (!dirAlreadyExisted) mkdirSync(settingsDir, { recursive: true });
     writeFileSync(
@@ -115,7 +153,10 @@ test('regression: category severity weights from config actually multiply the de
     );
 
     const weighted = run('ai-heavy-sample.md');
-    const expectedDrop = puffuryHit.severity * 0.5; // 0.5, not the old buggy 1.0
+    // The weight applies to every puffery_lexicon hit, not just one, so the
+    // expected drop is 0.5 (not the old buggy 1.0) applied across all of
+    // them, summed, not a single hit's severity.
+    const expectedDrop = puffuryHits.reduce((sum, h) => sum + h.severity, 0) * 0.5;
     assert.equal(
       weighted.breakdown.deduction,
       baseline.breakdown.deduction - expectedDrop,

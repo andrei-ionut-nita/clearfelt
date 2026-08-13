@@ -1,6 +1,6 @@
 # Output format
 
-How `/clearfelt audit` and `/clearfelt humanize` present results. Applies to every response these commands produce, not just a suggestion for long ones.
+How `/clearfelt audit`, `/clearfelt rewrite`, and `/clearfelt explain` present results. Applies to every response these commands produce, not just a suggestion for long ones.
 
 ## Rules
 
@@ -14,7 +14,7 @@ How `/clearfelt audit` and `/clearfelt humanize` present results. Applies to eve
 ## `/clearfelt audit` template
 
 ```
-## Empathy Index: <score>/100
+## Human Score: <score>/100
 
 <leadDriver, verbatim from the JSON, one line: what actually drove this number>
 
@@ -59,7 +59,7 @@ If `breakdown.deductionCapped` is true, the "Rule-hit deduction" row's label alr
 - <bullet, not a paragraph>
 ```
 
-## `/clearfelt humanize` intensity question template
+## `/clearfelt rewrite` intensity question template
 
 Shown in Pass 1, before any rewriting, when no intensity preference resolves automatically:
 
@@ -84,7 +84,7 @@ Shown in Pass 1, before any rewriting, when no intensity preference resolves aut
 
 When a preference already resolved (saved globally, saved for this project, or set via `.clearfelt/domain.md`), show only the "What I'd fix" table plus one line stating which intensity is running and why, no blocking question.
 
-## `/clearfelt humanize` template
+## `/clearfelt rewrite` template
 
 ```
 ## Before: <score>/100
@@ -105,9 +105,57 @@ Union of factors that were nonzero in either run, sorted by the larger of the tw
 
 ## Changes made
 
-- <span changed> to <what it became>
+Every bullet names what drove the change, not just the before/after text: a `patternSummary` pattern and category if a specific rule hit caused it, or the relevant `breakdown.impacts` label (for example "Sentence-rhythm (burstiness)") if a statistical signal did, not a generic "improved wording." A change made only because the resolved intensity tier's scope allows it (a `full_rewrite`-tier sentence-variation pass with no single rule hit behind it, for example) says so plainly rather than inventing a rule that didn't fire.
+
+- <span changed> to <what it became>. Driver: <pattern/category, or the impacts label>.
+
+If a span was left unchanged despite matching a rule (`risk_tier: sensitive` protection, a `.clearfelt/domain.md` exemption, or a `.clearfelt/voice-profile.md` preference), say so as its own bullet here too, not silently: `<span> kept as-is. Protected: <reason>.` This is what makes the diff explainable in both directions, not just for what moved.
+
+## Preservation check
+
+Only shown when `scripts/check.mjs`'s verdict for this run was `warn` (a `fail` verdict never reaches this template, see `reference/rewrite.md`'s "Preservation checking" section: it blocks the confirmation view entirely). Bullets, not prose, same discipline as "Changes made":
+
+- <type: number/date/properNoun/quote> `<value>` present in the source but missing from the rewrite. Context: `<snippet>`.
+- <type> `<value>` present in the rewrite but not the source. Context: `<snippet>`.
+
+Say plainly that these are heuristic, regex-based flags, not confirmed errors, and that the user should glance at the flagged spans themselves before approving.
 
 Apply this to `<path>`? (waiting for explicit yes/no)
 ```
 
 If the score result would be misleading on its own (for example, a clean number that doesn't reflect what a human reader would notice), say so as its own bulleted note under "Changes made," not folded into prose elsewhere in the response.
+
+## `/clearfelt explain` template
+
+```
+## Voice and domain
+
+| | |
+|---|---|
+| Voice mode | <single/multi> |
+| Voice profile | <path> (exists / not found, run /clearfelt setup) |
+| Words protected by voice profile | <keptWordsCount> |
+| Domain profile | <exists / not found, run /clearfelt setup> |
+| Risk tier | <riskTier> |
+| Domain mode | <mode, or "not set"> |
+| Preferred intensity | <preferredIntensity, or "not set, will ask"> |
+| Target reading grade level | <min>-<max> (source: <source>) |
+| Exempt technical terms | <exemptTermCount> |
+
+## Config
+
+Every row from `scripts/explain.mjs`'s `config` object, unfiltered, sorted by setting name for easy lookup, not by section.
+
+| Setting | Value | Source |
+|---|---|---|
+| <key> | <value> | <default / shipped (clearfelt.config.md) / global (~/.clearfelt/settings.md)> |
+
+## Hook
+
+| | |
+|---|---|
+| Enabled | <yes/no> |
+| Quiet | <yes/no> |
+| Ignored rule categories | <comma list, or "(none)"> |
+| Ignored file patterns | <comma list, or "(none)"> |
+```

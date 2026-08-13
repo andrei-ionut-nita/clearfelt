@@ -10,7 +10,7 @@ Default (no domain set up yet): general audience, no domain assumed.
 
 ## Technical terms exempt from flagging
 
-Words or phrases the shared rule files would otherwise flag, but that are legitimate, ordinary usage in this domain (for example, "robust" describing a system architecture, or "delve into the codebase" in a deep-dive piece). One per line. `/clearfelt audit` and `/clearfelt humanize` will never touch these.
+Words or phrases the shared rule files would otherwise flag, but that are legitimate, ordinary usage in this domain (for example, "robust" describing a system architecture, or "delve into the codebase" in a deep-dive piece). One per line. `/clearfelt audit` and `/clearfelt rewrite` will never touch these.
 
 - (example) robust
 
@@ -23,14 +23,20 @@ Optional. If set, `/clearfelt audit` notes when a draft's Flesch-Kincaid Grade L
 
 ## Preferred intensity
 
-Optional. If set, `/clearfelt humanize` uses this intensity for this project without asking, instead of the four-tier question described in `reference/humanize.md`. One of `light_touch`, `balanced`, `full_rewrite`, `structural_rework`. Scoped to this project only; for a preference that applies everywhere you use this skill, see `~/.clearfelt/settings.md` instead.
+Optional. If set, `/clearfelt rewrite` uses this intensity for this project without asking, instead of the four-tier question described in `reference/rewrite.md`. One of `light_touch`, `balanced`, `full_rewrite`, `structural_rework`. Scoped to this project only; for a preference that applies everywhere you use this skill, see `~/.clearfelt/settings.md` instead.
 
 - preferred_intensity: (unset)
+
+## Mode
+
+Optional. What kind of writing this project mostly is: `technical`, `marketing`, `support`, `executive`, `personal`, or `sensitive`. Context for `/clearfelt rewrite`'s qualitative judgment (writing.md's "genre conventions must be respected"): Pass 1 mentions it, and Pass 2's non-regex checks (frictionless claims, narrative idiosyncrasy, episodic grounding, cognitive friction) weigh it when deciding whether dense or formal language is a genre convention or an actual tell. It is informational, not a separate enforcement switch: it does not change what `scripts/detect.mjs` flags or scores, and setting `mode: sensitive` here does not by itself get you `risk_tier: sensitive`'s hedge/qualifier protection or forced confirmation, set `risk_tier` explicitly below for that.
+
+- mode: (unset)
 
 ## Risk tier
 
 Optional. Set this to `sensitive` for a project where a rewrite could carry real legal or reputational weight: a shareholder letter, a regulatory filing, anything with forward-looking statements or safe-harbor language, anything already reviewed by Legal. Default is `standard`.
 
-When `sensitive`: `/clearfelt humanize` never rewrites away hedges, qualifiers, or attributions (the `frictionless_claims` and `weasel_attribution` rule categories), since that language is often legally load-bearing, not a stylistic weakness, in this kind of document. `humanize.require_confirmation` is also forced to `true` for this project regardless of any saved global preference or `clearfelt.config.md` setting. See `reference/humanize.md`.
+When `sensitive`: `/clearfelt rewrite` never rewrites away hedges, qualifiers, or attributions (the `frictionless_claims` and `weasel_attribution` rule categories), since that language is often legally load-bearing, not a stylistic weakness, in this kind of document. `rewrite.require_confirmation` is also forced to `true` for this project regardless of any saved global preference or `clearfelt.config.md` setting. See `reference/rewrite.md`.
 
 - risk_tier: standard

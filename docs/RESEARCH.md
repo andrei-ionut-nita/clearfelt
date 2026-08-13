@@ -56,7 +56,7 @@ Two more from the same self-critique, emotional qualia (lived, shifting affect v
 
 This matters for how clearfelt's own scoring should be read: perplexity and burstiness distributions overlap heavily between good human writing and good AI writing, so any single threshold trades false positives against false negatives. (`pangram-2025`, `evalhub-2026`) Formal, technical, legal, and medical genres are inherently low-burstiness and low-perplexity even when entirely human-written, so detectors (and, by extension, `scripts/detect.mjs`'s statistical signals) will show more false positives there. Non-native English writers are disproportionately misflagged by commercial AI detectors for the same reason: their writing is statistically closer to the "smooth, uniform" AI profile without being AI-generated at all. (`stanford-hai-bias-2023`)
 
-The Empathy Index is a diagnostic signal for clearfelt's own rule dictionary, not a forensic AI-detection score. It should never be read as "this text was written by AI" or "this text was written by a human."
+The Human Score is a diagnostic signal for clearfelt's own rule dictionary, not a forensic AI-detection score. It should never be read as "this text was written by AI" or "this text was written by a human."
 
 ## What this means for clearfelt's rule dictionary
 
@@ -64,4 +64,4 @@ The existing rule categories (binary contrasts, fake-profound closers, throat-cl
 
 - Confirmed the lexical approach is directionally correct (`opara-2025`'s "high-probability word sequences" finding backs the whole banned-words concept) and added specific words with a research trail: `furthermore`, `leverage`, and (flagged unresolved) `camaraderie`, `palpable`, `intricate`.
 - Confirmed `scripts/detect.mjs`'s existing statistical signals (burstiness, type-token ratio, trigram repetition) are the right family of measurement, not just plausible-sounding metrics invented for this project.
-- Surfaced a caution worth keeping in mind for `/clearfelt humanize`'s `intensity: aggressive` mode: pushing burstiness and lexical diversity too hard past what's natural for the actual content risks reading as performed unevenness rather than genuine variation. The research measures what's different about human text on average; it doesn't say that maximizing every signal produces better writing.
+- Surfaced a caution worth keeping in mind for `/clearfelt rewrite`'s `intensity: aggressive` mode: pushing burstiness and lexical diversity too hard past what's natural for the actual content risks reading as performed unevenness rather than genuine variation. The research measures what's different about human text on average; it doesn't say that maximizing every signal produces better writing.

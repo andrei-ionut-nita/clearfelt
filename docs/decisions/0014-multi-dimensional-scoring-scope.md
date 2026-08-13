@@ -1,0 +1,22 @@
+# ADR 0014: Multi-dimensional scoring, what shipped and what didn't
+
+**Status:** Implemented
+**Date:** 2026-08-13
+
+## Context
+
+The v0.3 product-brainstorm spec doc asked for the single Empathy Index to become a multi-dimensional score, naming clarity, specificity, confidence inflation, and cliché density as the new dimensions. `computeScore` in `scripts/detect.mjs` already reduces every scoring signal to a labeled, signed `impacts` array (rule-hit deduction, burstiness, vocabulary diversity, repetition, paragraph variety, wall-of-text), sorted by magnitude, already reported as a first-class part of the JSON output, not an internal-only value. `categoryPoints` already gives a severity-weighted subtotal per rule category. The real question wasn't whether to add a breakdown, one already exists and is used, it was whether each of the four named dimensions actually holds up as a real, checkable signal before adding it to that breakdown.
+
+## Decision
+
+**Cliché density: already covered, not a new dimension.** `categoryPoints` is already a per-category severity-weighted subtotal, sorted descending; that is a cliché-density breakdown, one row per pattern family, not a single blended number. Nothing new was needed here beyond what shipped in 0.2.0.
+
+**Confidence inflation: shipped, as a new rule category, not a new formula.** `rules/banned_words/confidence_inflation_lexicon.md` (7 phrases: "impossible to overstate," "guaranteed to," "the ultimate solution," and similar), `source: clearfelt-heuristic`. Deliberately multi-word phrases, not single words like "always" or "never": those are ordinary intensifiers in everyday human writing (see `writing.md`'s "formality is not a flaw"), and flagging them would punish normal speech, not AI overclaiming. Because this fits the existing rule-file mechanism exactly, it required no change to `computeScore`, `categoryPoints`, or `impacts`, all three already handle a new category automatically. This is the cleanest form of "extend, don't duplicate": a new dimension that cost one new Markdown file.
+
+**Specificity: explored, not shipped.** A candidate signal (numerals plus capitalized non-sentence-initial tokens, as a proper-noun proxy, per sentence) was measured across all 16 fixtures in `tests/fixtures/eval/`. It did not hold up: several human fixtures scored 0 (the same as most AI fixtures), and one AI fixture (`ai-3.md`) scored higher than every human fixture, an inversion of the direction the signal is supposed to point in. At the document lengths these fixtures represent (3-6 sentences), the signal is too quantized and noisy to be a real dimension, not a rescaling problem the way vocabulary diversity was in ADR 0012, an actually broken formula in the wrong direction on real data. Shipping a noisy signal into the score would add false confidence, not information; this is exactly what ADR 0011 rejected percentile rescaling for prematurely, and the same caution applies here. Revisit if a much larger, longer-document eval corpus later shows this signal actually separates AI from human text; don't ship it on four data points that already contradict it.
+
+**Clarity: rejected, not merely deferred.** `docs/decisions/0008-readability-metrics.md` made a deliberate, documented decision to keep readability separate from the Empathy Index: "readability is an audience-fit measure... not an AI-tell measure... folding them into one number would hide both." Adding "clarity" as a scoring dimension, using any of the existing readability formulas or a new one, would directly reverse that decision. The spec doc's request and this repo's own prior architecture decision are in real conflict here, not a gap to fill; ADR 0008's reasoning still holds, so clarity stays a separate, non-score-affecting report, exactly as it already is.
+
+## Consequences
+
+The Empathy Index gained one real new dimension (confidence inflation) and kept the two others (cliché density via `categoryPoints`, readability/clarity via the separate report) that already existed in a form the spec doc's request turns out to already describe. It gained zero new signals from the two that were tried and didn't hold up (specificity) or that conflict with a prior deliberate decision (clarity), rather than shipping either one to satisfy a checklist. `scripts/eval.mjs`'s pass rate is unaffected by this decision (confidence inflation doesn't fire on any current fixture); its value would show up on a real document containing overclaiming language, which none of the current fixtures happen to be built around.

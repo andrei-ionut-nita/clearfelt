@@ -8,6 +8,19 @@ The rule dictionary drifts out of date as AI writing habits change, so keeping i
 2. Add a bullet in this shape:
    - Antipatterns: `- "the pattern" | severity: N | source: <key>`
    - Banned words: `- word | severity: N | tier: N | source: <key>`
+   - Antipatterns that describe a *shape* rather than fixed wording ("It's
+     not X. It's Y.") need `| regex: true` and a real regex in place of the
+     pattern, not bracketed placeholder text: `scripts/detect.mjs` matches
+     every non-regex bullet as a literal string, so `"It's not X. It's Y."`
+     would only ever match that exact sentence with literal capital X and Y
+     in it. See `rules/antipatterns/binary_contrasts.md` for examples. The
+     bullet line splits on `|` with no escaping, so the regex itself must
+     not contain a literal `|` (no alternation groups); rephrase the
+     pattern instead. If the pattern can't be expressed as a regex at all
+     (it requires comparing the meaning of multiple sentences, like
+     restating one point three different ways), it doesn't belong in
+     `rules/` as a bullet; propose it as a `/clearfelt rewrite` reasoning
+     step under "Qualitative signals" in `reference/audit.md` instead.
 3. Pick a severity from 1 to 9, matching how strongly the pattern reads as AI-generated. Look at the existing entries in that file for calibration before picking a number out of thin air.
 4. For banned words, pick a tier: `1` if it should always be flagged, `2` if it should only be flagged when clustered with other hits, `3` if it should only be flagged once it's clearly dense in the document. Tiers exist to cut false positives on words that are sometimes completely legitimate.
 5. **Pick a real `source:` key.** Options, in order of preference:

@@ -1,0 +1,1 @@
+Revenue was up 4% this quarter, mostly from the enterprise tier renewing early. Churn in the self-serve tier is still the problem, we lost three of our top ten accounts there. I want to spend Q3 fixing onboarding before we spend anything more on acquisition.

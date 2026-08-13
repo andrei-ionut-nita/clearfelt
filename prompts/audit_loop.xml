@@ -1,6 +1,6 @@
-<pipeline name="clearfelt-humanize">
+<pipeline name="clearfelt-rewrite">
   <config>
-    Read empathy_threshold, max_iterations, and intensity from clearfelt.config.md,
+    Read human_score_threshold, max_iterations, and intensity from clearfelt.config.md,
     layered under any ~/.clearfelt/settings.md global override and any
     .clearfelt/domain.md preferred_intensity project override.
     Do not hardcode these values here; the config files are the single source of truth.
@@ -10,16 +10,19 @@
     <goal>Establish what must be preserved, decide how much rewriting to do, and get explicit sign-off before anything is rewritten.</goal>
     <steps>
       <step>Read the target file in full.</step>
+      <step>This whole pipeline operates under writing.md's doctrine (what counts as bad writing, what always gets preserved, when to refuse) and voice.md's precedence rule (a stated voice preference overrides the shipped rule files for this project). Both apply throughout every pass below, not just here.</step>
       <step>Extract the factual payload: claims, numbers, names, dates, quotes, and any citations present. These must survive every later pass unchanged. Do not add facts, names, dates, or citations that are not already in the source (no-fabrication rule).</step>
       <step>Check for .clearfelt/voice-profile.md (or .clearfelt/voices/&lt;name&gt;.md in multi-voice mode) in the user's project. If present, read it and note preferred vocabulary, sentence rhythm notes, and non-negotiables. A voice-profile preference always overrides a default rule file entry for this run.</step>
-      <step>Check .clearfelt/domain.md for a risk_tier field. If it is set to "sensitive", note this for Pass 2 (hedges and qualifiers must never be rewritten away) and force the confirm-before-write gate on for this run, regardless of humanize.require_confirmation in clearfelt.config.md or any saved global preference. Mention once, plainly, that this project is marked sensitive and why that changes the run.</step>
+      <step>Check .clearfelt/domain.md for a risk_tier field. If it is set to "sensitive", note this for Pass 2 (hedges and qualifiers must never be rewritten away) and force the confirm-before-write gate on for this run, regardless of rewrite.require_confirmation in clearfelt.config.md or any saved global preference. Mention once, plainly, that this project is marked sensitive and why that changes the run.</step>
+      <step>Also check .clearfelt/domain.md for a mode field (technical, marketing, support, executive, personal, sensitive). If set, carry it forward into Pass 2 as context for the qualitative-signal judgment calls, not as a separate rule set: it does not change what the report or scan list flagged. If unset, proceed without asking; it is optional context, not a required gate.</step>
+      <step>Scan the target for &lt;!-- clearfelt-lock --&gt; ... &lt;!-- /clearfelt-lock --&gt; marker pairs (see reference/rewrite.md's "Locked spans"). Record each locked region's line range and carry it forward into Pass 2. These markers do not affect scoring, a rule hit inside a locked region still counts in the report exactly as it would anywhere else; they only mean Pass 2 must never rewrite the text between them.</step>
       <step>If no voice-profile.md exists, note that bundled defaults apply and continue without blocking; offer to run "/clearfelt setup" once, but do not require it.</step>
       <step>Run: node scripts/detect.mjs --mode report &lt;path&gt;. This scored hit list carries forward into Pass 2 for light_touch; do not re-run it there.</step>
       <step>Also run: node scripts/detect.mjs --mode scan &lt;path&gt;. This returns every occurrence of every rule-dictionary word or phrase, including ones tier-suppression hid from the scored report. Carries forward into Pass 2 for balanced and above; do not re-run it there either.</step>
       <step>Build a to-do preview from the report hits (not the scan list, which is usually much longer and not meant as a preview), following reference/output-format.md's to-do-list template: a table of category/pattern/line, not a paragraph.</step>
-      <step>Resolve the intensity to run at, in this order: .clearfelt/domain.md's preferred_intensity field (project-level, if present) beats ~/.clearfelt/settings.md's intensity/humanize.ask_intensity (global save, if present) beats clearfelt.config.md's shipped default (humanize.ask_intensity: true means ask).</step>
+      <step>Resolve the intensity to run at, in this order: .clearfelt/domain.md's preferred_intensity field (project-level, if present) beats ~/.clearfelt/settings.md's intensity/rewrite.ask_intensity (global save, if present) beats clearfelt.config.md's shipped default (rewrite.ask_intensity: true means ask).</step>
       <step>
-        If asking (no resolved preference): present the to-do preview plus the four-tier table (light_touch, balanced, full_rewrite, structural_rework; see reference/humanize.md for the full description of each) as the question. Note the target's existing paragraph structure and approximate length while presenting this, since only light_touch and balanced must preserve these exactly. After the user picks a tier, ask a second, separate question: save this choice, and if so, globally (writes to ~/.clearfelt/settings.md, applies to every project using this skill install) or just for this project (writes preferred_intensity to .clearfelt/domain.md, creating it from templates/domain.example.md if needed)? Do not save anything without this explicit second answer.
+        If asking (no resolved preference): present the to-do preview plus the four-tier table (light_touch, balanced, full_rewrite, structural_rework; see reference/rewrite.md for the full description of each) as the question. Note the target's existing paragraph structure and approximate length while presenting this, since only light_touch and balanced must preserve these exactly. After the user picks a tier, ask a second, separate question: save this choice, and if so, globally (writes to ~/.clearfelt/settings.md, applies to every project using this skill install) or just for this project (writes preferred_intensity to .clearfelt/domain.md, creating it from templates/domain.example.md if needed)? Do not save anything without this explicit second answer.
       </step>
       <step>If not asking (a resolved preference already exists): show the to-do preview as a brief FYI, state which intensity is being used and why (saved preference, project- or global-scoped), and mention how to change it. Proceed without blocking.</step>
     </steps>
@@ -32,24 +35,32 @@
         Respect the resolved intensity. Each tier is a strict superset of the one below it:
         light_touch: rewrite only the spans in Pass 1's report hit list. Paragraph count, paragraph order, and sentence count stay exactly as in the source.
         balanced: rewrite every occurrence in Pass 1's scan list (not just the report hit list), which includes words tier-suppression hid from the score, plus contractions and casual-transition swaps ("Plus" instead of "Furthermore") applied throughout the document. No sentence restructuring, no paragraph changes.
-        full_rewrite: everything in balanced, plus deliberate sentence-length variation (mix short punchy sentences with longer ones), a shift toward collective pronouns ("we" instead of "the user"), and addressing reference/audit.md's "Qualitative signals" (frictionless claims, narrative idiosyncrasy, episodic grounding, cognitive friction) as real rewrite targets. Paragraph count and order still preserved.
+        full_rewrite: everything in balanced, plus deliberate sentence-length variation (mix short punchy sentences with longer ones), a shift toward collective pronouns ("we" instead of "the user"), and addressing reference/audit.md's "Qualitative signals" (frictionless claims, narrative idiosyncrasy, episodic grounding, cognitive friction) as real rewrite targets, weighed against Pass 1's mode context if set: dense or formal language that is a genuine convention of a technical, executive, or sensitive-mode document is not the same thing as a qualitative tell, see writing.md. Paragraph count and order still preserved.
         structural_rework: everything in full_rewrite, plus willing to add missing paragraph breaks, split or merge paragraphs, reorder sentences within a paragraph, and trim throat-clearing or padding sentences for real conciseness.
-        Every tier remains bounded by the no-fabrication rule and voice-profile precedence. A word the user has a genuine reason to keep belongs in .clearfelt/domain.md's exemption list, checked before any of the above runs, not preserved by relying on tier-suppression, which protects the score, not humanize's editing scope.
+        Every tier remains bounded by the no-fabrication rule and voice-profile precedence. A word the user has a genuine reason to keep belongs in .clearfelt/domain.md's exemption list, checked before any of the above runs, not preserved by relying on tier-suppression, which protects the score, not rewrite's editing scope.
       </step>
       <step>If Pass 1 found risk_tier: sensitive, skip every rewrite that would remove or soften a frictionless_claims or weasel_attribution hit, at every intensity tier, including structural_rework. This overrides the tier-scope rules above for those two categories specifically; everything else about the resolved tier still applies.</step>
+      <step>Never rewrite inside a Pass-1-recorded locked-span region, at any intensity tier, including structural_rework: leave the marked text and the markers themselves exactly as they appear in the source. This is a per-span guarantee, narrower than risk_tier (which protects two whole rule categories project-wide); use it when only specific spans, not the whole document, need to stay untouched.</step>
+      <step>Track, per changed span, which pattern/category or which impacts label actually drove the change, and separately track every span that matched a rule but was deliberately left alone (risk_tier protection, a domain.md exemption, a voice-profile preference, or a locked-span marker, see writing.md and reference/output-format.md's "Changes made" template). Both lists feed the confirmation view in reference/output-format.md; neither is optional there.</step>
+      <step>Before rewriting a flagged span, check it against writing.md's "What clearfelt preserves" section: a formal or hedged passage that is correct for its genre is not a tell on its own, and a rewrite that would erase a genre convention the passage legitimately needs is not one this pass should make even if a rule technically matched.</step>
       <step>Apply contractions where natural (don't, you're, we'll) unless the voice profile says otherwise. This applies at every intensity tier, including light_touch.</step>
       <step>On a re-entry into this pass from the loop below, increase burstiness and structural variation further than the previous attempt, still bounded by the resolved intensity's scope, the no-fabrication rule, and voice-profile precedence.</step>
     </steps>
   </pass>
 
-  <pass id="3" name="warmth_evaluation">
-    <goal>Score the current draft and decide whether another scrub pass is needed.</goal>
+  <pass id="3" name="score_and_preserve_evaluation">
+    <goal>Score the current draft, verify it in code against the source before proceeding, and decide whether another scrub pass is needed.</goal>
     <steps>
       <step>Run: node scripts/detect.mjs --mode score &lt;path&gt;</step>
-      <step>Compare the returned score against empathy_threshold.</step>
+      <step>Compare the returned score against human_score_threshold.</step>
+      <step>
+        Write the current candidate draft to .clearfelt/candidate.md (creating .clearfelt/ if needed; this file is gitignored, machine-written scratch state, not something a human hand-edits), then run:
+        node scripts/check.mjs --before &lt;path&gt; --after .clearfelt/candidate.md
+        Read the JSON verdict. If verdict is "fail" (a locked-span mismatch, or a hard-fail-configured dropped/added fact under clearfelt.config.md's "Preservation checking" settings), treat this the same as a failed score threshold: report the specific violation (which locked span, which dropped or added fact), do not proceed to the confirmation view, and either retry pass 2 with an explicit instruction to restore the missing content or stop and report the failure honestly if max_iterations is reached. If verdict is "warn", carry the warned items forward into the confirmation view's "Changes made" / "Preservation check" section as disclosed items (see reference/output-format.md), not blocking. If verdict is "pass", nothing further is needed here.
+      </step>
     </steps>
-    <loop condition="score &lt; empathy_threshold" target="pass2" max_iterations="max_iterations">
-      Re-run pass 2 with the "re-entry" instruction above. If max_iterations is reached without clearing the threshold, stop and report the final score honestly rather than looping forever.
+    <loop condition="score &lt; human_score_threshold or check_verdict == 'fail'" target="pass2" max_iterations="max_iterations">
+      Re-run pass 2 with the "re-entry" instruction above. If max_iterations is reached without clearing the threshold or resolving a check.mjs failure, stop and report the final score and any unresolved preservation violation honestly rather than looping forever.
     </loop>
   </pass>
 </pipeline>

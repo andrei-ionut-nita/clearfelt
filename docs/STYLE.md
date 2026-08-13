@@ -1,6 +1,6 @@
 # The style clearfelt writes toward
 
-This is the standalone reference for what "humanized" actually means here. It's what `/clearfelt humanize` is optimizing for, and it's useful on its own even if you never run the tool: a checklist for catching AI-sounding writing by eye.
+This is the standalone reference for what "humanized" actually means here. It's what `/clearfelt rewrite` is optimizing for, and it's useful on its own even if you never run the tool: a checklist for catching AI-sounding writing by eye.
 
 ## Cadence
 
@@ -37,7 +37,7 @@ Seven categories of phrase and structure, documented in full in `rules/antipatte
 
 ## What doesn't get flagged
 
-A voice profile always wins. If `.clearfelt/voice-profile.md` says you like a word or a construction the base rules would otherwise catch, `/clearfelt humanize` leaves it alone. This tool is trying to remove the tells that make writing sound like nobody in particular wrote it, not to erase what makes your writing sound like you.
+A voice profile always wins. If `.clearfelt/voice-profile.md` says you like a word or a construction the base rules would otherwise catch, `/clearfelt rewrite` leaves it alone. This tool is trying to remove the tells that make writing sound like nobody in particular wrote it, not to erase what makes your writing sound like you.
 
 ## Readability, tracked separately
 

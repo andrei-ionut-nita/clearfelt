@@ -50,6 +50,7 @@ A rule bullet like `- delve | severity: 8 | tier: 1 | source: carnegie-mellon-20
 | `gunning-1952` | The Technique of Clear Writing (source of the Gunning Fog Index) | McGraw-Hill, 1952 | No free full text for the book itself; description verified via https://en.wikipedia.org/wiki/Gunning_fog_index |
 | `oppenheimer-2006` | Consequences of erudite vernacular utilized irrespective of necessity: problems with using long words needlessly | Applied Cognitive Psychology, 20, 139-156, 2006 | https://onlinelibrary.wiley.com/doi/abs/10.1002/acp.1178 |
 | `alter-oppenheimer-2009` | Uniting the tribes of fluency to form a metacognitive nation | Personality and Social Psychology Review, 13, 219-235, 2009 | https://journals.sagepub.com/doi/10.1177/1088868309341564 |
+| `guiraud-1954` | Root TTR ("Guiraud's R", V/sqrt(N), vocabulary richness normalized for text length), Guiraud 1954, as cited in Tweedie & Baayen, 1998 | Les caractères statistiques du vocabulaire, Presses Universitaires de France, 1954 | No free full text for the book itself; formula and attribution verified via https://quanteda.io/reference/textstat_lexdiv.html |
 
 ## Referenced but unresolved
 
@@ -79,7 +80,7 @@ Not academic research: pattern lists assembled by people building anti-AI-slop t
 | `community:no-ai-slop` | Peter Yang's flagged-pattern matrix (binary contrasts, fake-profound endings, throat-clearing openers, faux-insight setups, weasel attribution, colon-reveal, synonym cycling) | https://github.com/petergyang/no-ai-slop |
 | `community:anti-slop-slop-canon` | codeSTACKr's default-removed habits (game-changer, seamless, robust, delve, em dash, semicolon, exclamation points, rule of three, in conclusion) | https://github.com/codeSTACKr/anti-slop-slop-canon |
 | `community:brandonwise-humanizer` | brandonwise's tiered vocabulary and statistical-analysis design (burstiness, type-token ratio, trigram repetition), which shaped `scripts/detect.mjs`'s scoring approach | https://github.com/brandonwise/humanizer |
-| `community:blader-humanizer` | blader's no-fabrication rule and voice-sample-overrides-default-ban precedent, which shaped `reference/humanize.md`'s two hard rules | https://github.com/blader/humanizer |
+| `community:blader-humanizer` | blader's no-fabrication rule and voice-sample-overrides-default-ban precedent, which shaped `reference/rewrite.md`'s two hard rules | https://github.com/blader/humanizer |
 | `wikipedia-ai-signs` | Wikipedia's own "Signs of AI writing" essay, a crowd-maintained pattern list, not academic research; moved here from the academic table since it's the same kind of evidence as the other rows in this table | https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing |
 
 ## A note on the readability rows

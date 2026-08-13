@@ -1,17 +1,23 @@
 #!/usr/bin/env node
 /**
- * Lightweight sanity check for the Empathy Index's scoring weights, not a
+ * Lightweight sanity check for the Human Score's scoring weights, not a
  * substitute for real validation. Runs every fixture in
  * tests/fixtures/eval/manifest.json through detect.mjs and reports how many
  * land in their labeled expected band. A low pass rate is a real finding
  * about the detector's precision or recall, report it plainly, don't tune
  * the bands until it passes.
  *
- * Usage: node scripts/eval.mjs
+ * Usage: node scripts/eval.mjs [--out <file>]
+ *
+ * --out writes the same pass/fail summary as JSON to <file> (default: no
+ * file, unchanged behavior). Intended for reports/eval-<date>.json, a
+ * gitignored, opt-in location (see CLAUDE.md), so a release checklist can
+ * diff eval pass-rate trend across versions instead of only ever seeing the
+ * latest run.
  */
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -19,6 +25,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const DETECT = join(ROOT, 'scripts', 'detect.mjs');
 const EVAL_DIR = join(ROOT, 'tests', 'fixtures', 'eval');
+
+const args = process.argv.slice(2);
+const outIdx = args.indexOf('--out');
+const outFile = outIdx !== -1 ? args[outIdx + 1] : null;
 
 const manifest = JSON.parse(readFileSync(join(EVAL_DIR, 'manifest.json'), 'utf8'));
 
@@ -43,3 +53,13 @@ for (const r of results) {
   console.log(`${mark}  ${r.file.padEnd(14)} label=${r.label.padEnd(6)} score=${String(r.score).padStart(3)}  expected ${r.band}`);
 }
 console.log(`\n${passed}/${manifest.fixtures.length} fixtures scored within their expected band`);
+
+if (outFile) {
+  const outPath = join(ROOT, outFile);
+  mkdirSync(dirname(outPath), { recursive: true });
+  writeFileSync(
+    outPath,
+    JSON.stringify({ date: new Date().toISOString(), passed, total: manifest.fixtures.length, results }, null, 2),
+  );
+  console.log(`Wrote summary to ${outFile}`);
+}
