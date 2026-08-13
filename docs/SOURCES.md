@@ -51,6 +51,7 @@ A rule bullet like `- delve | severity: 8 | tier: 1 | source: carnegie-mellon-20
 | `oppenheimer-2006` | Consequences of erudite vernacular utilized irrespective of necessity: problems with using long words needlessly | Applied Cognitive Psychology, 20, 139-156, 2006 | https://onlinelibrary.wiley.com/doi/abs/10.1002/acp.1178 |
 | `alter-oppenheimer-2009` | Uniting the tribes of fluency to form a metacognitive nation | Personality and Social Psychology Review, 13, 219-235, 2009 | https://journals.sagepub.com/doi/10.1177/1088868309341564 |
 | `guiraud-1954` | Root TTR ("Guiraud's R", V/sqrt(N), vocabulary richness normalized for text length), Guiraud 1954, as cited in Tweedie & Baayen, 1998 | Les caractères statistiques du vocabulaire, Presses Universitaires de France, 1954 | No free full text for the book itself; formula and attribution verified via https://quanteda.io/reference/textstat_lexdiv.html |
+| `covington-mcfall-2010` | MATTR (Moving-Average Type-Token Ratio): ordinary type-token ratio computed inside a fixed-size sliding window and averaged across every window position, proposed specifically to remove length as a variable in lexical-diversity measurement rather than merely reduce its effect | Covington, M. A., & McFall, J. D. (2010). Cutting the Gordian Knot: The Moving-Average Type-Token Ratio (MATTR). Journal of Quantitative Linguistics, 17(2), 94-100 | https://doi.org/10.1080/09296171003643098 |
 
 ## Referenced but unresolved
 

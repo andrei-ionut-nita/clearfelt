@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clearfelt/schemas/check-report.schema.json",
+  "title": "clearfelt check.mjs preservation report",
+  "description": "Documents the JSON scripts/check.mjs prints on stdout (exit 0 for verdict 'pass'/'warn', exit 1 for 'fail'). Documentation and a target for scripts/lint.mjs's checkOutputShape(), not a runtime validator, same convention as schemas/detect-report.schema.json. See scripts/check.mjs's main() for the actual construction.",
+  "type": "object",
+  "required": ["before", "after", "lockedSpans", "fingerprint", "verdict"],
+  "properties": {
+    "before": { "type": "string", "description": "Absolute path to the source file." },
+    "after": { "type": "string", "description": "Absolute path to the rewrite/write candidate." },
+    "lockedSpans": {
+      "type": "object",
+      "required": ["count", "mismatches"],
+      "properties": {
+        "count": { "type": "integer" },
+        "mismatches": { "type": "array", "items": { "type": "object", "required": ["index", "reason"] } }
+      }
+    },
+    "fingerprint": {
+      "type": "object",
+      "required": ["dropped", "added"],
+      "properties": {
+        "dropped": { "type": "array", "items": { "type": "object", "required": ["type", "value", "context"] } },
+        "added": { "type": "array", "items": { "type": "object", "required": ["type", "value", "context"] } }
+      }
+    },
+    "verdict": { "type": "string", "enum": ["pass", "warn", "fail"] }
+  }
+}

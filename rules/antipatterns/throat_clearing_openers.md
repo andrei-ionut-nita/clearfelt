@@ -10,3 +10,7 @@ Warm-up sentences that delay the point instead of starting with it.
 - "As we navigate" | severity: 7 | source: community:no-ai-slop
 - "In an era where" | severity: 8 | source: community:no-ai-slop
 - "When it comes to" | severity: 4 | source: community:no-ai-slop
+- "In today's [^.]* world" | severity: 8 | regex: true | source: community:no-ai-slop
+- "In today's [^.]* landscape" | severity: 8 | regex: true | source: community:no-ai-slop
+- "In today's [^.]* environment" | severity: 8 | regex: true | source: community:no-ai-slop
+- "In today's [^.]* era" | severity: 8 | regex: true | source: community:no-ai-slop

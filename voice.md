@@ -1,16 +1,16 @@
 # Voice
 
-This is doctrine, not data: what clearfelt's voice-profile system does, why it exists, and what precedence it has. It does not hold any individual's actual preferences. Those live in `.clearfelt/voice-profile.md` (per project, gitignored, built by `/clearfelt setup`, template at `templates/voice-profile.example.md`), or per-writer in `.clearfelt/voices/<name>.md` when `voice.mode: multi` (`docs/decisions/0007`). If you're looking for where to add your own preferred words or non-negotiables, edit that file, not this one.
+This is doctrine, not data: what clearfelt's voice-profile system does, why it exists, and what precedence it has. It does not hold any individual's actual preferences. Those live in `.clearfelt/voice-profile.md` (per project, gitignored, built by `/clearfelt setup`, template at `templates/voice-profile.example.md`), or per-writer in `.clearfelt/voices/<name>.md` when `voice.mode: multi` (`docs/decisions/0007`). Looking for where to add your own preferred words or non-negotiables? Edit that file, not this one.
 
 ## What "voice" means here
 
-`writing.md` defines clearfelt's product-level judgment about what counts as bad writing. Voice is the layer above that judgment: a specific person's or project's deliberate departures from it. A word `writing.md`'s doctrine would otherwise flag can still be exactly right for a given writer, and the voice-profile system exists so that preference wins, on purpose, not as a loophole.
+`writing.md` defines clearfelt's product-level judgment about what counts as bad writing. Voice sits above that judgment: a specific person's or project's deliberate departures from it. A word the base doctrine would otherwise flag can still be exactly right for a given writer, and this system exists so that preference wins on purpose, not as a loophole someone stumbled into.
 
 ## Precedence
 
-A stated voice-profile preference overrides the shipped rule files, for that project, full stop (`docs/decisions/0004`). This is enforced in code, not just prompt instruction: `scripts/detect.mjs`'s `loadVoiceProfileOverrides` checks `.clearfelt/voice-profile.md`'s "Words I want to keep using" section before matching any rule against the target text, so an LLM following the wrong instructions can't accidentally flag something the user explicitly asked to keep.
+A stated voice-profile preference overrides the base rule dictionary, for that project, full stop (`docs/decisions/0004`). This is enforced in code, not just prompt instruction: `scripts/detect.mjs`'s `loadVoiceProfileOverrides` checks `.clearfelt/voice-profile.md`'s "Words I want to keep using" section before matching any rule against the target text, so a model following stale instructions can't accidentally flag something the user already asked to keep.
 
-Voice precedence does not override `writing.md`'s refusal rules. A voice profile can say "keep using 'honestly,' as a sentence opener"; it cannot make `/clearfelt rewrite` skip confirmation before writing, or soften a hedge in `risk_tier: sensitive` content. Those are product-level guarantees, not style preferences.
+That precedence stops at `writing.md`'s refusal rules. Saying "keep using 'honestly' as a sentence opener" is a style choice; skipping confirmation before a write, or softening a hedge in `risk_tier: sensitive` content, is not. The latter two stay product-level guarantees no matter what a profile says.
 
 ## What the system asks for, and why
 
@@ -22,4 +22,4 @@ Voice precedence does not override `writing.md`'s refusal rules. A voice profile
 
 ## What this system will not do
 
-It will not let a voice preference introduce a fact, name, date, or citation that wasn't in the source; no-fabrication (`docs/decisions/0004`) applies regardless of voice. It will not silently expand scope beyond the resolved intensity tier just because a voice profile exists; a voice profile changes which words get flagged and how the prose sounds, not how much of the document `/clearfelt rewrite` is allowed to touch.
+A voice preference cannot introduce a fact, name, date, or citation absent from the source; no-fabrication (`docs/decisions/0004`) applies regardless of voice. Nor does having one silently expand what `/clearfelt rewrite` is allowed to touch beyond the resolved intensity tier: it changes which words get flagged and how the prose sounds, not how much of the document gets edited.

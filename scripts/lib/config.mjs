@@ -26,7 +26,18 @@ export function parseConfigTable(text, sectionHeading) {
     const row = line.match(/^\|\s*([\w.]+)\s*\|\s*([^|]+?)\s*\|/);
     if (row && row[1] !== 'Setting' && row[1] !== 'Category') {
       const value = row[2].trim();
-      settings[row[1]] = /^-?\d+(\.\d+)?$/.test(value) ? Number(value) : value;
+      // Coerce "true"/"false" to real booleans, not just numbers to Number:
+      // every boolean setting in this file (rewrite.require_confirmation,
+      // check.hard_fail_on_*, ...) is read elsewhere with a strict ===
+      // true/false comparison, and a bare string "true" or "false" fails
+      // both directions of that comparison silently. Found while adding
+      // rules.include_unresolved: check.hard_fail_on_dropped_fact/
+      // _on_added_fact could never actually trigger even when a project set
+      // them to true by hand, and hard_fail_on_locked_span_mismatch could
+      // never actually be turned off, both for this exact reason.
+      if (value === 'true') settings[row[1]] = true;
+      else if (value === 'false') settings[row[1]] = false;
+      else settings[row[1]] = /^-?\d+(\.\d+)?$/.test(value) ? Number(value) : value;
     }
   }
   return settings;
@@ -37,8 +48,11 @@ export const CONFIG_SECTIONS = [
   'Category severity weights',
   'Tier thresholds',
   'Statistical signals',
+  'Rules',
   'Voice',
   'Rewrite',
+  'Write',
+  'Write lengths',
   'Preservation checking',
   'Readability',
 ];
@@ -51,18 +65,36 @@ export function loadConfigFile(path) {
   return merged;
 }
 
-const CONFIG_DEFAULTS = {
+// Kept in sync by hand with clearfelt.config.md's shipped defaults and
+// score.mjs's own inline `config.<key> ?? <literal>` fallbacks (see
+// docs/decisions/0011 for where the statistical-signal weights below came
+// from). scripts/lint.mjs's "config defaults drift" check fails the build
+// if any of the three ever disagree again, see docs/decisions/0018.
+export const CONFIG_DEFAULTS = {
   human_score_threshold: 85,
   max_iterations: 3,
   intensity: 'light_touch',
   tier2_cluster_window: 40,
   tier3_density_threshold: 3,
-  burstiness_weight: 10,
-  vocabulary_diversity_weight: 5,
-  repetition_weight: 5,
+  deduction_cap: 65,
+  burstiness_weight: 12,
+  vocabulary_diversity_baseline: 0.8688,
+  vocabulary_diversity_weight: 140,
+  repetition_weight: 27,
+  paragraph_variety_weight: 12,
+  wall_of_text_penalty: 15,
+  wall_of_text_sentence_threshold: 5,
+  'rules.include_unresolved': false,
   'voice.mode': 'single',
   'rewrite.require_confirmation': true,
   'rewrite.ask_intensity': true,
+  length: 'medium',
+  'write.ask_length': true,
+  short_min_words: 150,
+  short_max_words: 300,
+  medium_min_words: 400,
+  medium_max_words: 800,
+  long_min_words: 1000,
   'check.enabled': true,
   'check.hard_fail_on_locked_span_mismatch': true,
   'check.hard_fail_on_dropped_fact': false,

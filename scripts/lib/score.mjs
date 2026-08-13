@@ -54,6 +54,44 @@ export function rootTypeTokenRatio(text) {
   return unique.size / Math.sqrt(words.length);
 }
 
+// Root TTR reduces length dependence (see the comment above) but does not
+// eliminate it: measured against 16 fixtures capped at 84 words plus one
+// external 841-word AI-generated document (see docs/decisions/0017), Root
+// TTR climbed from a 5.7-7.4 band at fixture length to 15.4 at 841 words,
+// more than double the highest value the score's weight was ever calibrated
+// against, an out-of-distribution extrapolation the weight had no way to
+// stay sane under. The root cause is not noise in the formula, it is
+// accumulating unique words over the WHOLE document: a longer document
+// naturally covers more subtopics and therefore uses more distinct words
+// almost regardless of whether a human or a model wrote it, so whole-
+// document vocabulary count is confounded with topic breadth, not a clean
+// proxy for authorship. MATTR (Moving-Average Type-Token Ratio, Covington
+// and McFall 2010, see docs/SOURCES.md) fixes this by construction rather
+// than by degree: it computes ordinary TTR inside a fixed-size sliding
+// window (every window is exactly windowSize words, so length stops being a
+// variable at all once a document exceeds the window) and averages across
+// every window position. Measured on the same fixtures plus the 841-word
+// document, MATTR-50 landed at 0.889, squarely inside the existing 16-
+// fixture spread (0.80 to 0.95) instead of an outlier, while still keeping
+// a real, if modest, separation between the ai-labeled mean (0.862) and the
+// human-labeled mean (0.879). Falls back to plain whole-document TTR when a
+// text is shorter than the window, since there is no length-bias left to
+// correct for at that size, matching typeTokenRatio's existing behavior for
+// short documents. rootTypeTokenRatio is still reported alongside this for
+// transparency, only movingAverageTtr feeds the score now.
+export function movingAverageTtr(text, windowSize = 50) {
+  const words = text.toLowerCase().match(/\b[a-z']+\b/g) || [];
+  if (words.length === 0) return 0;
+  if (words.length <= windowSize) return new Set(words).size / words.length;
+  let sum = 0;
+  let windowCount = 0;
+  for (let i = 0; i <= words.length - windowSize; i++) {
+    sum += new Set(words.slice(i, i + windowSize)).size / windowSize;
+    windowCount++;
+  }
+  return sum / windowCount;
+}
+
 export function trigramRepetitionRatio(text) {
   const words = text.toLowerCase().match(/\b[a-z']+\b/g) || [];
   if (words.length < 3) return 0;
@@ -166,7 +204,8 @@ export function computeScore(text, hits, config) {
 
   const ttr = typeTokenRatio(text);
   const rootTtr = rootTypeTokenRatio(text);
-  const vocabAdjustment = (rootTtr - (config.vocabulary_diversity_baseline ?? 6.7)) * (config.vocabulary_diversity_weight ?? 8);
+  const mattr = movingAverageTtr(text, 50);
+  const vocabAdjustment = (mattr - (config.vocabulary_diversity_baseline ?? 0.8688)) * (config.vocabulary_diversity_weight ?? 140);
 
   const repetition = trigramRepetitionRatio(text);
   const repetitionPenalty = repetition * (config.repetition_weight ?? 27) * 10;
@@ -231,6 +270,7 @@ export function computeScore(text, hits, config) {
     wallOfTextPenalty,
     typeTokenRatio: ttr,
     rootTypeTokenRatio: rootTtr,
+    movingAverageTtr: mattr,
     trigramRepetitionRatio: repetition,
     paragraphCount,
     impacts,

@@ -12,7 +12,7 @@
  */
 
 import { existsSync, readdirSync, statSync, realpathSync } from 'node:fs';
-import { join, resolve, sep } from 'node:path';
+import { join, resolve, sep, extname } from 'node:path';
 import { loadConfig, loadVoiceProfileOverrides, loadDomainOverrides } from './lib/config.mjs';
 import { loadRules } from './lib/rules.mjs';
 import { runFile } from './lib/report.mjs';
@@ -99,8 +99,8 @@ function main() {
   }
   assertWithinCwd(targetPath, 'target path');
 
-  const { all: rules } = loadRules();
   const config = loadConfig();
+  const { all: rules } = loadRules(config);
   const voiceOverrides = loadVoiceProfileOverrides(process.cwd(), config, args.voice);
   const domainOverrides = loadDomainOverrides(process.cwd());
   const overrides = new Set([...voiceOverrides, ...domainOverrides]);
@@ -112,7 +112,7 @@ function main() {
   }
 
   const files = readdirSync(targetPath, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && SCANNABLE_EXTENSIONS.has(entry.name.slice(entry.name.lastIndexOf('.'))))
+    .filter((entry) => entry.isFile() && SCANNABLE_EXTENSIONS.has(extname(entry.name)))
     .map((entry) => join(targetPath, entry.name))
     .sort();
 

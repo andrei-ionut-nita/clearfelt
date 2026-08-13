@@ -1,0 +1,53 @@
+<pipeline name="clearfelt-write">
+  <config>
+    Read human_score_threshold, max_iterations, and length from clearfelt.config.md,
+    layered under any ~/.clearfelt/settings.md global override and any
+    .clearfelt/domain.md preferred_length project override.
+    Do not hardcode these values here; the config files are the single source of truth.
+  </config>
+
+  <pass id="1" name="seed_and_interview">
+    <goal>Resolve what's actually being written: the seed, its structure, and how long the result should be, before generating anything.</goal>
+    <steps>
+      <step>Resolve the seed: a file path if one was given, or the text pasted directly into the request. If neither is present, ask for one plainly; never invent a topic from nothing.</step>
+      <step>This whole pipeline operates under writing.md's doctrine and voice.md's precedence rule, same as prompts/audit_loop.xml. Both apply throughout every pass below, not just here.</step>
+      <step>Check for .clearfelt/voice-profile.md (or .clearfelt/voices/&lt;name&gt;.md in multi-voice mode). If present, read it and note preferred vocabulary, sentence rhythm notes, and non-negotiables, same as rewrite's Pass 1. If absent, mention once that /clearfelt setup can build one, then continue with bundled defaults; never block on it.</step>
+      <step>Check .clearfelt/domain.md for mode and risk_tier, same meaning as in rewrite's Pass 1: mode is context for later judgment calls, risk_tier: sensitive forces the confirm-before-write gate on regardless of clearfelt.config.md or a saved global preference (write has no independent confirmation setting, it reuses rewrite.require_confirmation, see clearfelt.config.md's Write section).</step>
+      <step>Ask a short interview, at most 4 questions, each through the AskUserQuestion wizard pattern reference/setup.md uses: concrete example options plus Other, one question per turn, never a bare open text prompt. Cover format (post, article, email, README section, ...), target audience, and any point the seed doesn't state but the piece must hit. Skip a question outright if .clearfelt/domain.md already answers it (format and audience are often domain-level, not per-draft); do not re-ask what's already resolved.</step>
+      <step>Resolve the length to run at, in this order: .clearfelt/domain.md's preferred_length field (project-level, if present) beats ~/.clearfelt/settings.md's length/write.ask_length (global save, if present) beats clearfelt.config.md's shipped default (write.ask_length: true means ask).</step>
+      <step>
+        If asking (no resolved preference): present the three-tier table (short, medium, long; see reference/write.md for what each targets) following reference/output-format.md's "/clearfelt write length question template". After the user picks, ask a second, separate question: save this choice, and if so, globally (writes to ~/.clearfelt/settings.md) or just for this project (writes preferred_length to .clearfelt/domain.md, creating it from templates/domain.example.md if needed)? Do not save anything without this explicit second answer.
+      </step>
+      <step>If not asking (a resolved preference already exists): state which length is being used and why (saved preference, project- or global-scoped), and mention how to change it. Proceed without blocking.</step>
+      <step>Record the seed's own factual payload: any claim, number, name, date, or quote it already states. These, plus anything a genuine interview answer adds, are the only facts the draft is allowed to contain; see the no-fabrication reinterpretation in reference/write.md.</step>
+    </steps>
+  </pass>
+
+  <pass id="2" name="draft_from_seed">
+    <goal>Generate a first full draft from the seed and interview answers, at the resolved length.</goal>
+    <steps>
+      <step>Write a complete draft at the resolved length tier's target word count, in the format and for the audience resolved in Pass 1.</step>
+      <step>The seed's stated position is load-bearing: the draft must not soften, reverse, or omit the seed's actual claim. Expand and support it, don't dilute it.</step>
+      <step>No-fabrication rule, write's version: never introduce a name, date, statistic, or quote that isn't in the seed or an interview answer. Connective tissue, examples, and structure are expected to be new, that is the point of this command; a fact is not.</step>
+      <step>Apply voice-profile preferences and contractions where natural, same as rewrite's scrub pass, from the first draft onward, not as a later cleanup step.</step>
+      <step>On a re-entry into this pass from the loop below, treat this as a rewrite of the current candidate draft, not a fresh draft from the seed: apply the same scrub-slop scope escalation rewrite's Pass 2 uses (structural variation, sentence-length variety, addressing reference/audit.md's qualitative signals), still bounded by the no-fabrication rule above.</step>
+    </steps>
+  </pass>
+
+  <pass id="3" name="score_and_preserve_evaluation">
+    <goal>Score the current draft, verify its facts against the seed in code, and decide whether another draft pass is needed.</goal>
+    <steps>
+      <step>Write the current candidate draft to .clearfelt/candidate.md (creating .clearfelt/ if needed; gitignored, machine-written scratch state).</step>
+      <step>Run: node scripts/detect.mjs --mode score .clearfelt/candidate.md</step>
+      <step>Compare the returned score against human_score_threshold.</step>
+      <step>
+        Write the seed text (the seed file's content, or the pasted seed text, plus every interview answer as plain lines) to .clearfelt/seed.md, then run:
+        node scripts/check.mjs --before .clearfelt/seed.md --after .clearfelt/candidate.md
+        Read the JSON verdict. A locked-span mismatch is not expected here (a fresh seed rarely has lock markers) but is still handled identically to rewrite's Pass 3 if one is present. Treat the fingerprint's dropped list as expected noise, the seed is short by design, most of what a full draft "drops" relative to it never existed as a fact to preserve. Treat the added list as the one that matters: a genuinely new number, date, name, or quote not traceable to the seed or an interview answer means a real fabrication risk, not just a stylistic difference; if check.hard_fail_on_added_fact is true, this blocks the write exactly as it would for rewrite; if false (the default), it carries forward into the confirmation view as a disclosed warning, see reference/output-format.md's "/clearfelt write template".
+      </step>
+    </steps>
+    <loop condition="score &lt; human_score_threshold or (check_verdict == 'fail' and hard_fail_configured)" target="pass2" max_iterations="max_iterations">
+      Re-run pass 2 with the "re-entry" instruction above. If max_iterations is reached without clearing the threshold or resolving a check.mjs failure, stop and report the final score and any unresolved preservation violation honestly rather than looping forever.
+    </loop>
+  </pass>
+</pipeline>

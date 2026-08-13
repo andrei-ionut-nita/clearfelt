@@ -1,0 +1,11 @@
+{
+  "runId": "run-1",
+  "date": "2026-08-13",
+  "judge": "Live Claude Code session (Sonnet 5), judged immediately after authoring the fixtures and reference/audit.md's Qualitative signals section in the same context",
+  "judgments": {
+    "ai-1.md": { "narrativeIdiosyncrasy": false, "episodicGrounding": false, "cognitiveFriction": false, "noSynonymCycling": false, "admitsRealStakes": false },
+    "ai-2.md": { "narrativeIdiosyncrasy": false, "episodicGrounding": false, "cognitiveFriction": false, "noSynonymCycling": false, "admitsRealStakes": false },
+    "human-1.md": { "narrativeIdiosyncrasy": true, "episodicGrounding": true, "cognitiveFriction": true, "noSynonymCycling": true, "admitsRealStakes": true },
+    "human-2.md": { "narrativeIdiosyncrasy": true, "episodicGrounding": true, "cognitiveFriction": true, "noSynonymCycling": true, "admitsRealStakes": true }
+  }
+}

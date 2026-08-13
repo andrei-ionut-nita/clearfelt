@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clearfelt/schemas/qualitative-manifest.schema.json",
+  "title": "clearfelt qualitative-signals manifest",
+  "description": "Documents tests/fixtures/qualitative/manifest.json's shape, read by scripts/qualitative-eval.mjs. Same documentation-only role as schemas/eval-manifest.schema.json (not a validation engine this repo runs, see CLAUDE.md's dependency-free rule). Covers the five 'Qualitative signals' in reference/audit.md, which are a reasoning step performed by whoever runs /clearfelt audit or /clearfelt rewrite, not something scripts/detect.mjs can check with a regex.",
+  "type": "object",
+  "required": ["note", "fixtures"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "note": { "type": "string" },
+    "fixtures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "label", "expected"],
+        "additionalProperties": false,
+        "properties": {
+          "file": { "type": "string", "description": "Filename under tests/fixtures/qualitative/, e.g. \"ai-1.md\"." },
+          "label": { "type": "string", "enum": ["ai", "human"] },
+          "expected": {
+            "type": "object",
+            "required": ["narrativeIdiosyncrasy", "episodicGrounding", "cognitiveFriction", "noSynonymCycling", "admitsRealStakes"],
+            "additionalProperties": false,
+            "description": "All five booleans use the same polarity: true means the fixture exhibits the human-like quality (noSynonymCycling being true means it does NOT cycle synonyms).",
+            "properties": {
+              "narrativeIdiosyncrasy": { "type": "boolean" },
+              "episodicGrounding": { "type": "boolean" },
+              "cognitiveFriction": { "type": "boolean" },
+              "noSynonymCycling": { "type": "boolean" },
+              "admitsRealStakes": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "runId": "run-2",
+  "date": "2026-08-13",
+  "judge": "Independent subagent (general-purpose), no prior context on the fixtures or their intended labels",
+  "judgments": {
+    "ai-1.md": { "narrativeIdiosyncrasy": false, "episodicGrounding": false, "cognitiveFriction": false, "noSynonymCycling": true, "admitsRealStakes": false },
+    "ai-2.md": { "narrativeIdiosyncrasy": false, "episodicGrounding": false, "cognitiveFriction": false, "noSynonymCycling": true, "admitsRealStakes": false },
+    "human-1.md": { "narrativeIdiosyncrasy": true, "episodicGrounding": true, "cognitiveFriction": true, "noSynonymCycling": true, "admitsRealStakes": true },
+    "human-2.md": { "narrativeIdiosyncrasy": true, "episodicGrounding": true, "cognitiveFriction": true, "noSynonymCycling": true, "admitsRealStakes": true }
+  }
+}

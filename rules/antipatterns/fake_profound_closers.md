@@ -9,3 +9,6 @@ Sentences that reach for weight they haven't earned, usually saved for the last 
 - "the possibilities are endless" | severity: 6 | source: community:no-ai-slop
 - "and that changes everything" | severity: 7 | source: community:no-ai-slop
 - "in the end, it's all about" | severity: 6 | source: community:no-ai-slop
+- "the best is yet to come" | severity: 6 | source: clearfelt-heuristic
+- "trust the process" | severity: 6 | source: clearfelt-heuristic
+- "here's to the next chapter" | severity: 7 | source: clearfelt-heuristic

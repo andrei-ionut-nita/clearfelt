@@ -19,7 +19,7 @@
  */
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, realpathSync } from 'node:fs';
-import { join, dirname, resolve, sep } from 'node:path';
+import { join, dirname, resolve, sep, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
@@ -184,7 +184,7 @@ function runHookBody() {
 
   const filePath = payload?.tool_input?.file_path;
   if (!filePath) return;
-  const ext = filePath.slice(filePath.lastIndexOf('.'));
+  const ext = extname(filePath);
   if (!TEXT_EXTENSIONS.has(ext)) return;
   if (state.ignoreFiles.some((glob) => globToRegExp(glob).test(filePath))) return;
   if (!existsSync(filePath)) return;

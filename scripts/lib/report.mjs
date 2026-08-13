@@ -134,6 +134,7 @@ export function runFile(targetPath, args, rules, config, overrides) {
         wallOfTextPenalty: Number(scoring.wallOfTextPenalty.toFixed(2)),
         typeTokenRatio: Number(scoring.typeTokenRatio.toFixed(3)),
         rootTypeTokenRatio: Number(scoring.rootTypeTokenRatio.toFixed(2)),
+        movingAverageTtr: Number(scoring.movingAverageTtr.toFixed(3)),
         trigramRepetitionRatio: Number(scoring.trigramRepetitionRatio.toFixed(3)),
         paragraphCount: scoring.paragraphCount,
       },

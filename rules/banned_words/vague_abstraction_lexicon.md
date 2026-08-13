@@ -10,3 +10,4 @@ Words that stand in for a concrete detail instead of naming it. Distinct from th
 - a number of | severity: 5 | tier: 2 | source: clearfelt-heuristic
 - a variety of | severity: 5 | tier: 2 | source: clearfelt-heuristic
 - in various ways | severity: 6 | tier: 2 | source: clearfelt-heuristic
+- moving forward | severity: 5 | tier: 2 | source: clearfelt-heuristic

@@ -1,0 +1,26 @@
+{
+  "$schema": "../../../schemas/qualitative-manifest.schema.json",
+  "note": "Labeled fixtures for the five 'Qualitative signals' in reference/audit.md (narrative idiosyncrasy, episodic grounding, cognitive friction, synonym cycling, admits real stakes), which are explicitly a reasoning step, not a score component: no regex can check them, scripts/detect.mjs never touches this directory. Every boolean below uses the same polarity: true means the fixture exhibits the human-like quality (narrativeIdiosyncrasy present, episodicGrounding present, cognitiveFriction present, noSynonymCycling meaning it does NOT cycle synonyms, admitsRealStakes present). A well-calibrated judgment pass should mark all five true for every human-labeled fixture and mostly false for every ai-labeled one. scripts/qualitative-eval.mjs scores recorded runs (see runs/README.md for how a run gets recorded) against this manifest and, once two or more runs exist, reports pairwise agreement between them, the actual measure of how consistent the judgment call is, not just whether any one run happened to be right.",
+  "fixtures": [
+    {
+      "file": "ai-1.md",
+      "label": "ai",
+      "expected": { "narrativeIdiosyncrasy": false, "episodicGrounding": false, "cognitiveFriction": false, "noSynonymCycling": false, "admitsRealStakes": false }
+    },
+    {
+      "file": "ai-2.md",
+      "label": "ai",
+      "expected": { "narrativeIdiosyncrasy": false, "episodicGrounding": false, "cognitiveFriction": false, "noSynonymCycling": false, "admitsRealStakes": false }
+    },
+    {
+      "file": "human-1.md",
+      "label": "human",
+      "expected": { "narrativeIdiosyncrasy": true, "episodicGrounding": true, "cognitiveFriction": true, "noSynonymCycling": true, "admitsRealStakes": true }
+    },
+    {
+      "file": "human-2.md",
+      "label": "human",
+      "expected": { "narrativeIdiosyncrasy": true, "episodicGrounding": true, "cognitiveFriction": true, "noSynonymCycling": true, "admitsRealStakes": true }
+    }
+  ]
+}

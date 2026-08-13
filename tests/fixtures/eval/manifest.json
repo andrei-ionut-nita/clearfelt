@@ -17,6 +17,18 @@
     { "file": "ai-7.md", "label": "ai", "bucket": "executive", "expectedMax": 70 },
     { "file": "human-7.md", "label": "human", "bucket": "executive", "expectedMin": 85 },
     { "file": "ai-8.md", "label": "ai", "bucket": "sensitive", "expectedMax": 70 },
-    { "file": "human-8.md", "label": "human", "bucket": "sensitive", "expectedMin": 85 }
+    { "file": "human-8.md", "label": "human", "bucket": "sensitive", "expectedMin": 85 },
+    { "file": "ai-9.md", "label": "ai", "bucket": "marketing", "expectedMax": 70 },
+    { "file": "human-9.md", "label": "human", "bucket": "marketing", "expectedMin": 85 },
+    { "file": "ai-10.md", "label": "ai", "bucket": "marketing", "expectedMax": 70 },
+    { "file": "human-10.md", "label": "human", "bucket": "marketing", "expectedMin": 85 },
+    { "file": "ai-11.md", "label": "ai", "bucket": "technical", "expectedMax": 70 },
+    { "file": "human-11.md", "label": "human", "bucket": "technical", "expectedMin": 85 },
+    { "file": "ai-12.md", "label": "ai", "bucket": "personal", "expectedMax": 70 },
+    { "file": "human-12.md", "label": "human", "bucket": "personal", "expectedMin": 85 },
+    { "file": "ai-13.md", "label": "ai", "bucket": "sensitive", "expectedMax": 70 },
+    { "file": "human-13.md", "label": "human", "bucket": "sensitive", "expectedMin": 85 },
+    { "file": "ai-14.md", "label": "ai", "bucket": "support", "expectedMax": 70 },
+    { "file": "human-14.md", "label": "human", "bucket": "support", "expectedMin": 85 }
   ]
 }

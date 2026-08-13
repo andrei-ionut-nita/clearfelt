@@ -13,7 +13,9 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname, resolve, relative, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 import { parseRuleFile } from './lib/rules.mjs';
+import { CONFIG_SECTIONS, CONFIG_DEFAULTS } from './lib/config.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
@@ -184,7 +186,10 @@ function checkRuleBulletShape() {
 }
 
 // ---- check: config-to-code drift ----
-const CONFIG_SECTIONS = ['Scoring', 'Category severity weights', 'Tier thresholds', 'Statistical signals', 'Voice', 'Rewrite', 'Preservation checking', 'Readability'];
+// CONFIG_SECTIONS is imported from lib/config.mjs (the same list loadConfigFile
+// actually parses against), not redeclared here: a hand-duplicated copy of this
+// list is exactly the failure shape checkConfigDefaultsDrift() below exists to
+// catch elsewhere, so this file doesn't get to have its own.
 
 function parseConfigHeadings(text) {
   return [...text.matchAll(/^##\s+(.+)$/gm)].map((m) => m[1].trim());
@@ -250,6 +255,124 @@ function checkConfigDrift() {
   }
 }
 
+// ---- check: config defaults drift (three sources of truth for one number) ----
+// clearfelt.config.md's shipped defaults, scripts/lib/config.mjs's
+// CONFIG_DEFAULTS fallback-of-last-resort, and scripts/lib/score.mjs's own
+// inline `config.<key> ?? <literal>` fallbacks are three independent places
+// a default can live. loadConfig() means CONFIG_DEFAULTS only ever fires
+// when a shipped row is missing, so a stale value there can sit unnoticed
+// for a long time (this happened: CONFIG_DEFAULTS still held the
+// pre-docs/decisions/0011 weights for burstiness/vocabulary/repetition
+// after the shipped config and score.mjs were both updated). This check
+// parses all three and fails if any two disagree on a key present in all of
+// them, so that drift can't happen silently again.
+function parseConfigTableValues(text, heading) {
+  const lines = text.split('\n');
+  const start = lines.findIndex((l) => l.trim() === `## ${heading}`);
+  if (start === -1) return {};
+  const values = {};
+  for (let i = start + 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (/^##\s+/.test(line)) break;
+    const row = line.match(/^\|\s*([\w.]+)\s*\|\s*([^|]+?)\s*\|/);
+    if (row && row[1] !== 'Setting' && row[1] !== 'Category') values[row[1]] = row[2].trim();
+  }
+  return values;
+}
+
+function parseScoreFallbacks() {
+  const text = readFileSync(join(ROOT, 'scripts', 'lib', 'score.mjs'), 'utf8');
+  const fallbacks = {};
+  for (const m of text.matchAll(/config\.(\w+)\s*\?\?\s*(-?\d+(?:\.\d+)?)/g)) {
+    fallbacks[m[1]] = m[2];
+  }
+  return fallbacks;
+}
+
+function checkConfigDefaultsDrift() {
+  const configText = readFileSync(join(ROOT, 'clearfelt.config.md'), 'utf8');
+  const shipped = {};
+  for (const heading of CONFIG_SECTIONS) Object.assign(shipped, parseConfigTableValues(configText, heading));
+  const scoreFallbacks = parseScoreFallbacks();
+
+  for (const [key, literal] of Object.entries(scoreFallbacks)) {
+    if (key in shipped && String(shipped[key]) !== String(literal)) {
+      fail(
+        'config-defaults-drift',
+        `score.mjs's fallback for "${key}" is ${literal}, but clearfelt.config.md ships ${shipped[key]}. These must agree, a mismatch means score.mjs's own default is stale.`,
+      );
+    }
+    if (key in CONFIG_DEFAULTS && String(CONFIG_DEFAULTS[key]) !== String(literal)) {
+      fail(
+        'config-defaults-drift',
+        `score.mjs's fallback for "${key}" is ${literal}, but scripts/lib/config.mjs's CONFIG_DEFAULTS has ${CONFIG_DEFAULTS[key]}. If clearfelt.config.md's shipped row is ever missing, loadConfig() would silently return the stale CONFIG_DEFAULTS value instead of score.mjs's own fallback.`,
+      );
+    }
+  }
+}
+
+// ---- check: detect.mjs / check.mjs output shape (schemas/*-report.schema.json) ----
+// The rule-bullet and eval-manifest schemas under schemas/ document the two
+// input formats; nothing previously checked the actual JSON shape detect.mjs
+// and check.mjs print on the way OUT, the boundary where a model reads that
+// output over Bash with no schema validation between the two. A field
+// rename or removal there would silently confuse the model mid-pipeline
+// instead of failing loudly, unlike everything else this script checks.
+// Walks each schema's own `required`/`properties` (not a generic
+// JSON-Schema engine, same "targeted, hand-written checks against the
+// documented shape" rule checkRuleBulletShape() above already follows), so
+// the schema file and this check can't drift apart from each other either.
+function assertRequiredKeys(obj, schema, path, checkName, sourceLabel) {
+  if (obj === null || typeof obj !== 'object') {
+    fail(checkName, `${sourceLabel}: expected an object at ${path || '(root)'}, got ${obj === null ? 'null' : typeof obj}`);
+    return;
+  }
+  for (const key of schema.required ?? []) {
+    if (!(key in obj)) {
+      fail(checkName, `${sourceLabel}: missing required field "${path}${path ? '.' : ''}${key}" (see schemas/${schema.$id.split('/').pop()})`);
+    }
+  }
+  for (const [key, subSchema] of Object.entries(schema.properties ?? {})) {
+    if (subSchema.type === 'object' && subSchema.required && key in obj) {
+      assertRequiredKeys(obj[key], subSchema, `${path}${path ? '.' : ''}${key}`, checkName, sourceLabel);
+    }
+  }
+}
+
+function checkOutputShape() {
+  const detectSchema = JSON.parse(readFileSync(join(ROOT, 'schemas', 'detect-report.schema.json'), 'utf8'));
+  const checkSchema = JSON.parse(readFileSync(join(ROOT, 'schemas', 'check-report.schema.json'), 'utf8'));
+
+  const sampleFile = join(ROOT, 'tests', 'fixtures', 'human-sample.md');
+  try {
+    const out = execFileSync(process.execPath, [join(ROOT, 'scripts', 'detect.mjs'), '--mode', 'report', sampleFile], {
+      cwd: ROOT,
+      encoding: 'utf8',
+    });
+    assertRequiredKeys(JSON.parse(out), detectSchema, '', 'output-shape', 'detect.mjs --mode report');
+  } catch (err) {
+    fail('output-shape', `detect.mjs --mode report failed to run against ${relative(ROOT, sampleFile)}: ${err.message}`);
+  }
+
+  const beforeFile = join(ROOT, 'tests', 'fixtures', 'check', 'clean-rewrite-before.md');
+  const afterFile = join(ROOT, 'tests', 'fixtures', 'check', 'clean-rewrite-after.md');
+  try {
+    const out = execFileSync(
+      process.execPath,
+      [join(ROOT, 'scripts', 'check.mjs'), '--before', beforeFile, '--after', afterFile],
+      { cwd: ROOT, encoding: 'utf8' },
+    );
+    assertRequiredKeys(JSON.parse(out), checkSchema, '', 'output-shape', 'check.mjs');
+  } catch (err) {
+    // check.mjs exits 1 on verdict "fail"; err.stdout still has the JSON.
+    if (err.stdout) {
+      assertRequiredKeys(JSON.parse(err.stdout), checkSchema, '', 'output-shape', 'check.mjs');
+    } else {
+      fail('output-shape', `check.mjs failed to run against its clean-rewrite fixtures: ${err.message}`);
+    }
+  }
+}
+
 // ---- run ----
 checkEmDash();
 checkFrontmatter();
@@ -257,6 +380,8 @@ checkXml();
 checkRuleSources();
 checkRuleBulletShape();
 checkConfigDrift();
+checkConfigDefaultsDrift();
+checkOutputShape();
 
 for (const w of warnings) console.warn(`WARN  ${w}`);
 for (const f of failures) console.error(`FAIL  ${f}`);

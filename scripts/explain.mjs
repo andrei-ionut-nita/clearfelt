@@ -59,6 +59,7 @@ function explainDomain(config) {
       riskTier: 'standard',
       mode: null,
       preferredIntensity: null,
+      preferredLength: null,
       targetGradeLevel: {
         min: config.target_grade_level_min?.value,
         max: config.target_grade_level_max?.value,
@@ -68,18 +69,31 @@ function explainDomain(config) {
     };
   }
   const text = readFileSync(domainPath, 'utf8');
-  const riskTierMatch = text.match(/risk_tier:\s*(\S+)/);
-  const modeMatch = text.match(/^mode:\s*(\S+)/m);
-  const intensityMatch = text.match(/preferred_intensity:\s*(\S+)/);
+  // Every field below lives on a `- key: value` bullet line per
+  // templates/domain.example.md, not a bare `key: value` line, and the
+  // template's own convention for "not set" is the literal string
+  // "(unset)", not an absent line. Both must be matched, or a real
+  // domain.md (which always has the bullet prefix) silently fails to
+  // parse, and the template's own unset sentinel reads as a real value.
+  function field(name) {
+    const m = text.match(new RegExp(`^-?\\s*${name}:\\s*(\\S+)`, 'm'));
+    if (!m || m[1] === '(unset)') return null;
+    return m[1];
+  }
+  const riskTierMatch = field('risk_tier');
+  const modeMatch = field('mode');
+  const intensityMatch = field('preferred_intensity');
+  const lengthMatch = field('preferred_length');
   const minMatch = text.match(/target_grade_level_min:\s*(\d+(\.\d+)?)/);
   const maxMatch = text.match(/target_grade_level_max:\s*(\d+(\.\d+)?)/);
   const exemptTermCount = extractBulletSection(text, '## Technical terms exempt from flagging').size;
 
   return {
     exists: true,
-    riskTier: riskTierMatch ? riskTierMatch[1] : 'standard',
-    mode: modeMatch ? modeMatch[1] : null,
-    preferredIntensity: intensityMatch ? intensityMatch[1] : null,
+    riskTier: riskTierMatch ?? 'standard',
+    mode: modeMatch,
+    preferredIntensity: intensityMatch,
+    preferredLength: lengthMatch,
     targetGradeLevel: {
       min: minMatch ? Number(minMatch[1]) : config.target_grade_level_min?.value,
       max: maxMatch ? Number(maxMatch[1]) : config.target_grade_level_max?.value,

@@ -54,12 +54,33 @@ for (const r of results) {
 }
 console.log(`\n${passed}/${manifest.fixtures.length} fixtures scored within their expected band`);
 
+// Per-bucket breakdown, not just the flat aggregate: writing.md's own
+// doctrine (formality isn't a flaw, genre conventions must be respected)
+// implies failure modes are genre-specific, and a single pass rate hides
+// that a detector could be strong on marketing copy and weak on technical
+// writing while still reporting a healthy-looking overall number.
+// Fixtures with no "bucket" field (the original ai/human-1..5) are grouped
+// under "(unbucketed)" rather than silently dropped from this view.
+const byBucket = new Map();
+for (const [i, entry] of manifest.fixtures.entries()) {
+  const bucket = entry.bucket ?? '(unbucketed)';
+  if (!byBucket.has(bucket)) byBucket.set(bucket, { passed: 0, total: 0 });
+  const stat = byBucket.get(bucket);
+  stat.total += 1;
+  if (results[i].inBand) stat.passed += 1;
+}
+console.log('\nBy bucket:');
+for (const [bucket, stat] of [...byBucket.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+  console.log(`  ${bucket.padEnd(14)} ${stat.passed}/${stat.total}`);
+}
+
 if (outFile) {
   const outPath = join(ROOT, outFile);
   mkdirSync(dirname(outPath), { recursive: true });
+  const byBucketObj = Object.fromEntries(byBucket);
   writeFileSync(
     outPath,
-    JSON.stringify({ date: new Date().toISOString(), passed, total: manifest.fixtures.length, results }, null, 2),
+    JSON.stringify({ date: new Date().toISOString(), passed, total: manifest.fixtures.length, byBucket: byBucketObj, results }, null, 2),
   );
   console.log(`Wrote summary to ${outFile}`);
 }

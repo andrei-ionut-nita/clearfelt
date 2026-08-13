@@ -9,7 +9,7 @@ Most anti-AI-slop tools work the same way: a big prompt tells the model what to 
 ## Major features
 
 - **Deterministic Human Score.** `scripts/detect.mjs` computes the score in code, reproducible by anyone, not estimated by an LLM.
-- **Sourced rule dictionary.** Every rule cites real research ([docs/SOURCES.md](docs/SOURCES.md)) or named prior art, nothing asserted without a disclosed origin.
+- **Sourced rule dictionary.** Every rule cites real research ([docs/SOURCES.md](docs/SOURCES.md)) or named prior art, nothing asserted without a disclosed origin. A handful of words carry an honestly-labeled `unresolved-*` source, a citation nobody could verify, and stay off by default rather than counting against your score; see `rules.include_unresolved` in `clearfelt.config.md`.
 - **Confirms before it writes anything.** `/clearfelt rewrite` shows a before/after and asks, it never silently overwrites your file.
 - **Multi-voice for teams.** One shared voice by default, or a separate profile per writer.
 - **Domain-aware, no false positives on real jargon.** `.clearfelt/domain.md` exempts legitimate technical terms a generic banlist would otherwise flag.
@@ -57,25 +57,25 @@ You'll get a score, a readability report, and a list of hits with line numbers. 
 /clearfelt rewrite path/to/draft.md
 ```
 
-Before rewriting, it shows you what it'd fix and asks how much to change, light touch (just those items) up to structural rework (paragraph breaks and reordering too). Then it shows a before/after and asks before touching the file. Nothing gets written until you say yes, twice.
+First it previews what it would change and asks how far to go, light touch (just those items) up to structural rework (paragraph breaks and reordering too). Then it runs the pass, hands you a diff, and waits for a yes before touching the file. Two separate approvals, not one.
 
 ## Before and after
 
 Scores below are real, computed by running `scripts/detect.mjs` against these exact snippets, not illustrative round numbers. They move whenever the scoring formula does, see `docs/RELEASE.md`'s release checklist for keeping them current.
 
-**Before** (Human Score: 21)
+**Before** (Human Score: 28)
 
 > In today's fast-paced digital world, it is important to note that AI is transforming every industry. It's not a tool. It's a revolution. Experts agree that companies must delve into this technology to unlock seamless growth. The future isn't coming. It's already here.
 
-**After** (Human Score: 96)
+**After** (Human Score: 100)
 
 > AI is already changing how most industries work, and that's not really in dispute anymore. What's less obvious is how fast companies actually need to move on it. We've seen teams get real traction just by picking one workflow and testing it for a month. That's usually enough to know if it's worth the bigger commitment.
 
-**Before** (Human Score: 44)
+**Before** (Human Score: 62)
 
 > Our platform offers a seamless, robust solution that delivers pivotal insights. Studies show that businesses leveraging our tools see paramount improvements. In conclusion, this is a game-changer for your organization.
 
-**After** (Human Score: 89)
+**After** (Human Score: 100)
 
 > Our platform gives you insights you can actually act on, without the setup headache most tools come with. Teams using it tend to see real gains fast. If your org is stuck deciding, this is probably the push you need.
 
@@ -90,7 +90,7 @@ Scores below are real, computed by running `scripts/detect.mjs` against these ex
 | `$clearfelt hooks <status\|on\|off\|ignore-rule\|ignore-file\|reset>` | Manages an auto-audit hook that scores text files after you edit them. |
 | `node scripts/pin.mjs <pin\|unpin> <audit\|rewrite\|explain\|setup>` | Creates or removes a `$clearfelt-<command>` shortcut skill. |
 
-`/clearfelt rewrite` asks which of four intensities to use (light touch, balanced, full rewrite, structural rework) before it runs, showing what it would fix first. Answer once and it offers to remember: save globally (`~/.clearfelt/settings.md`, your home directory, safe across skill updates) or just for this project (`.clearfelt/domain.md`). It also never writes without your explicit approval; set `rewrite.require_confirmation: false` in `clearfelt.config.md` only if you're deliberately running it unattended. Every approved write is logged to `.clearfelt/audit.log`. For a project where a rewrite carries real legal or reputational weight, set `risk_tier: sensitive` in `.clearfelt/domain.md`, it stops rewrite from rewriting away hedges and qualifiers and forces the confirmation gate on regardless of other settings.
+`/clearfelt rewrite` asks which of four intensities to use (light touch, balanced, full rewrite, structural rework), previewing the target list first. Answer once and it offers to remember the choice: globally (`~/.clearfelt/settings.md`, your home directory, safe across skill updates) or just for this project (`.clearfelt/domain.md`). The file itself isn't touched until you sign off on the result; set `rewrite.require_confirmation: false` in `clearfelt.config.md` only for a deliberately unattended run. Every approved write lands a line in `.clearfelt/audit.log`. For a project where a rewrite carries real legal or reputational weight, set `risk_tier: sensitive` in `.clearfelt/domain.md`: hedges and qualifiers stop being fair game, and the sign-off step becomes mandatory regardless of any other setting.
 
 ## Using it on content pipelines
 
@@ -134,6 +134,7 @@ scripts/lib/report.mjs  pattern/category summaries, baseline diff, orchestration
 scripts/check.mjs      preservation checker, diffs a rewrite candidate against its source
 scripts/explain.mjs    prints every resolved config setting and its provenance
 scripts/eval.mjs        lightweight scoring sanity check against a labeled corpus
+scripts/qualitative-eval.mjs  scores recorded judgment runs on the five qualitative signals
 scripts/hook.mjs       auto-audit hook admin and runtime body
 scripts/pin.mjs        $clearfelt-<command> shortcut creation
 scripts/lint.mjs       repo-consistency checks, run before any PR
@@ -142,9 +143,9 @@ rules/banned_words/     single words and short phrases, tiered
 clearfelt.config.md    every tunable, one Markdown table
 prompts/audit_loop.xml  the 3-pass rewrite pipeline for /clearfelt rewrite
 templates/              bundled voice-profile and domain-profile defaults
-schemas/                documents the rule-bullet and eval-manifest JSON shapes
+schemas/                documents the rule-bullet, eval-manifest, and detect/check output JSON shapes
 reports/                gitignored, opt-in saved artifacts (audit/eval/check output)
-tests/                  node --test suite plus fixtures/eval/'s labeled corpus
+tests/                  node --test suite plus fixtures/eval/'s and fixtures/qualitative/'s labeled corpora
 ```
 
 `prompts/audit_loop.xml` is the one file in this repo that isn't Markdown. It's the literal prompt text fed to Claude to run the rewrite loop, not something you're meant to hand-edit day to day, and XML tags are Anthropic's own recommended way to structure a multi-step prompt reliably. Everything you'd actually customize lives in the Markdown files above it.
@@ -167,4 +168,4 @@ MIT. See [LICENSE](LICENSE).
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md). Current version: 0.3.0.
+See [CHANGELOG.md](CHANGELOG.md). Current version: 0.4.0.

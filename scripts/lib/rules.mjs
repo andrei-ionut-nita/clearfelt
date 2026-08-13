@@ -76,14 +76,28 @@ export function mergeLocal(base, localFile) {
   return merged;
 }
 
-export function loadRules() {
-  const antipatterns = mergeLocal(
-    loadRuleDir(join(ROOT, 'rules', 'antipatterns')),
-    join(ROOT, 'rules', 'antipatterns.local.md'),
+// An "unresolved-*" source key (see docs/SOURCES.md) discloses that a rule's
+// citation couldn't be verified, not that one exists: shipping it as a
+// scored default anyway would contradict "every rule cites... nothing
+// asserted without a disclosed origin" (README.md). Off by default, per
+// rules.include_unresolved in clearfelt.config.md; a project that wants
+// these anyway (or has independently verified the citation) can opt in.
+// Applies uniformly to shared and .local.md entries alike: an unresolved
+// citation is the same disclosed gap regardless of which file it's in.
+function filterUnresolved(entries, includeUnresolved) {
+  if (includeUnresolved) return entries;
+  return entries.filter((entry) => !String(entry.source ?? '').startsWith('unresolved-'));
+}
+
+export function loadRules(config = {}) {
+  const includeUnresolved = config['rules.include_unresolved'] === true;
+  const antipatterns = filterUnresolved(
+    mergeLocal(loadRuleDir(join(ROOT, 'rules', 'antipatterns')), join(ROOT, 'rules', 'antipatterns.local.md')),
+    includeUnresolved,
   );
-  const bannedWords = mergeLocal(
-    loadRuleDir(join(ROOT, 'rules', 'banned_words')),
-    join(ROOT, 'rules', 'banned_words.local.md'),
+  const bannedWords = filterUnresolved(
+    mergeLocal(loadRuleDir(join(ROOT, 'rules', 'banned_words')), join(ROOT, 'rules', 'banned_words.local.md')),
+    includeUnresolved,
   );
   return { antipatterns, bannedWords, all: [...antipatterns, ...bannedWords] };
 }

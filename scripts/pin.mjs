@@ -5,8 +5,8 @@
  * same pin-marker-comment convention so unpin never deletes a user's own skill.
  *
  * Usage:
- *   node scripts/pin.mjs pin <audit|rewrite|setup>
- *   node scripts/pin.mjs unpin <audit|rewrite|setup>
+ *   node scripts/pin.mjs pin <audit|rewrite|write|explain|setup>
+ *   node scripts/pin.mjs unpin <audit|rewrite|write|explain|setup>
  */
 
 import { existsSync, readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
@@ -17,7 +17,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_ROOT = resolve(__dirname, '..');
 
 const HARNESS_DIRS = ['.claude', '.cursor', '.codex', '.agents'];
-const VALID_COMMANDS = ['audit', 'rewrite', 'explain', 'setup'];
+const VALID_COMMANDS = ['audit', 'rewrite', 'write', 'explain', 'setup'];
 const PIN_MARKER = '<!-- clearfelt-pinned-skill -->';
 
 function findProjectRoot(startDir = process.cwd()) {

@@ -49,25 +49,45 @@ test('ai-heavy-sample.md: known hits, deduction, and wall-of-text penalty', () =
   //    from raw TTR to length-normalized Root TTR with a rescaled weight
   //    (docs/decisions/0012-length-normalized-vocabulary-diversity.md),
   //    both while closing the eval recall gap.
+  // 3. score 23 to 11, hits and deduction unchanged, when Root TTR was
+  //    replaced by MATTR (docs/decisions/0017-windowed-vocabulary-diversity.md):
+  //    Root TTR still grew unbounded with document length well past this
+  //    corpus (15.4 on an 841-word real-world sample versus a 5.7-7.4
+  //    fixture-calibrated band), a windowed measure fixes that by
+  //    construction. This fixture is 92 words, just over the 50-word
+  //    window, so it lost most of its vocabulary-diversity bonus too, not
+  //    just the outlier long document the fix targeted.
+  // 4. score 11 to 9, hits 10 to 12, deduction 63 to 75 (now over
+  //    deduction_cap, deductionCapped flips true), when investigating
+  //    tests/fixtures/eval/ai-7.md's out-of-band eval miss surfaced a real
+  //    coverage gap: "landscape" had no rule entry at all, and "In today's
+  //    rapidly evolving X landscape/world/era/environment" openers only
+  //    matched the single literal "In today's world," string, not this
+  //    paraphrase. Both gaps were closed with new rule-dictionary entries
+  //    (rules/banned_words/high_frequency_lexicon.md's "landscape",
+  //    rules/antipatterns/throat_clearing_openers.md's four new regex
+  //    bullets), and this fixture happens to contain exactly the phrase
+  //    those entries were added for, so its score moved too.
   const result = run('ai-heavy-sample.md');
-  assert.equal(result.score, 23);
-  assert.equal(result.breakdown.deduction, 63);
-  assert.equal(result.breakdown.deductionApplied, 63);
-  assert.equal(result.breakdown.deductionCapped, false);
+  assert.equal(result.score, 9);
+  assert.equal(result.breakdown.deduction, 75);
+  assert.equal(result.breakdown.deductionApplied, 65);
+  assert.equal(result.breakdown.deductionCapped, true);
   assert.equal(result.breakdown.wallOfTextPenalty, 15);
   assert.equal(result.breakdown.paragraphCount, 1);
   assert.deepEqual(result.categoryCounts, {
     fake_profound_closers: 1,
-    high_frequency_lexicon: 3,
+    throat_clearing_openers: 1,
+    high_frequency_lexicon: 4,
     puffery_lexicon: 6,
   });
-  assert.equal(result.hits.length, 10);
+  assert.equal(result.hits.length, 12);
 });
 
 test('ai-heavy-sample.md: impacts and category points are sorted by magnitude, descending', () => {
   const result = run('ai-heavy-sample.md');
   const impacts = result.breakdown.impacts;
-  assert.equal(impacts[0].label, 'Rule-hit deduction');
+  assert.match(impacts[0].label, /^Rule-hit deduction/); // "(capped from N)" once deduction exceeds deduction_cap, see the fixture-history comment above
   for (let i = 1; i < impacts.length; i++) {
     assert.ok(Math.abs(impacts[i - 1].impact) >= Math.abs(impacts[i].impact), 'impacts must be sorted by |impact| descending');
   }
@@ -82,7 +102,7 @@ test('ai-heavy-sample.md: impacts and category points are sorted by magnitude, d
     assert.ok(points[i - 1].points >= points[i].points, 'categoryPoints must be sorted descending');
   }
 
-  assert.equal(result.patternSummary.length, 10); // one row per distinct pattern, matching the 10 hits in this fixture
+  assert.equal(result.patternSummary.length, 12); // one row per distinct pattern, matching the 12 hits in this fixture
   for (const row of result.patternSummary) {
     assert.equal(row.occurrences, row.lines.length, `${row.pattern}: occurrences must match the number of recorded lines`);
   }

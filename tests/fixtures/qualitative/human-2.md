@@ -1,0 +1,5 @@
+We moved off Postgres RDS to a self-managed cluster in October, mostly to cut costs, and I want to be upfront that six months later I'm about 60/40 glad we did it, not the clean win I would have described at the time.
+
+The failover testing we did beforehand was thorough. It's the stuff we didn't test that bit us: a kernel update on the underlying VMs in December caused a three-minute connection storm during a routine patch window, something RDS would have abstracted away entirely. We lost about $4,000 in the two weeks after that dealing with on-call fatigue and one very tense incident review.
+
+That said, our query latency at p99 dropped by roughly a third, and we're not paying the RDS markup anymore, which by our own math pays for a fraction of an engineer. Whether that fraction is worth the operational burden depends entirely on team size, and for us at eleven engineers it's genuinely close. I wouldn't recommend this to a team of four. I'm less sure than I was in October about whether I'd recommend it to a team our size either.

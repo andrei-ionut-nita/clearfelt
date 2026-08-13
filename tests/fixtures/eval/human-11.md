@@ -1,0 +1,5 @@
+We split the monolith into three services last quarter and I'm still not sure it was the right call. The orders service and the inventory service both need strong consistency, and putting a network hop between them means we now have a class of bug we didn't used to have: inventory says available, order goes through, and then a race condition drops the count negative. We've patched it with a compensating transaction, which is a fancy way of saying we detect the negative count after the fact and issue a refund.
+
+The one part that clearly got better is deploys. Inventory used to be the thing that blocked every release because it had the flakiest test suite. Now it ships on its own schedule and nobody else has to wait on it. That alone might have justified the migration even if the consistency tradeoff hadn't worked out.
+
+If I were doing this again I'd keep orders and inventory in the same service and split out something with looser consistency requirements first, like notifications. Lesson learned, mostly the hard way, over about four postmortems.

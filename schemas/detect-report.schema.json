@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clearfelt/schemas/detect-report.schema.json",
+  "title": "clearfelt detect.mjs report output",
+  "description": "Documents the JSON scripts/detect.mjs prints in --mode report (single-file case). This is documentation and a target for scripts/lint.mjs's checkOutputShape(), not a file clearfelt reads or a generic JSON-Schema validator this repo runs (dependency-free, per CLAUDE.md): a model reading this output over Bash has no schema validation between the two, so a real shape drift here would silently confuse the model rather than fail loudly, which is what checkOutputShape() exists to catch instead. --mode score returns only { target, score }; --mode scan returns { target, occurrences }; a directory target wraps this shape once per file under a top-level { target, isDirectory: true, score, files: [...] }. See scripts/lib/report.mjs's runFile() for the actual construction.",
+  "type": "object",
+  "required": ["target", "score", "leadDriver", "breakdown", "categoryCounts", "categoryPoints", "patternSummary", "hits", "readability"],
+  "properties": {
+    "target": { "type": "string", "description": "Absolute path to the file scored." },
+    "score": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "leadDriver": { "type": "string", "description": "Human-readable label for breakdown.impacts[0], or a fallback string when no single factor dominates." },
+    "breakdown": {
+      "type": "object",
+      "required": ["impacts", "deduction", "deductionApplied", "deductionCapped", "paragraphCount"],
+      "properties": {
+        "impacts": { "type": "array", "items": { "type": "object", "required": ["label", "impact"] }, "description": "Sorted by magnitude descending, zero-impact rows omitted." },
+        "deduction": { "type": "number", "description": "Uncapped rule-hit deduction." },
+        "deductionApplied": { "type": "number", "description": "Rule-hit deduction after deduction_cap." },
+        "deductionCapped": { "type": "boolean" },
+        "paragraphCount": { "type": "integer" }
+      }
+    },
+    "categoryCounts": { "type": "object", "description": "category -> hit count." },
+    "categoryPoints": { "type": "array", "items": { "type": "object", "required": ["category", "points", "hits"] } },
+    "patternSummary": { "type": "array", "items": { "type": "object", "required": ["pattern", "category", "points", "occurrences", "lines"] } },
+    "hits": { "type": "array", "items": { "type": "object", "required": ["category", "pattern", "severity", "tier", "source", "line", "snippet"] } },
+    "readability": {
+      "type": "object",
+      "required": ["fleschReadingEase", "fleschKincaidGrade", "gunningFog", "passiveVoiceDensity", "nominalizationDensity", "withinTargetRange"]
+    }
+  }
+}
