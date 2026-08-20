@@ -572,3 +572,188 @@ test('.clearfelt/domain.md target_grade_level_min/max overrides clearfelt.config
     releaseLock();
   }
 });
+
+// ---- --register (docs/decisions/0024) ----
+
+test('--register: neutral (the default) never adds a registerCheck field, and the score matches the no-flag run exactly', () => {
+  const path = join(FIXTURES, 'register-tmp.md');
+  writeFileSync(path, "What's the tell that someone's faking it, maybe?\n");
+  try {
+    const noFlag = run('register-tmp.md');
+    const explicitNeutral = run('register-tmp.md', ['--register', 'neutral']);
+    assert.equal(noFlag.registerCheck, undefined);
+    assert.equal(explicitNeutral.registerCheck, undefined);
+    assert.equal(noFlag.score, explicitNeutral.score);
+  } finally {
+    rmSync(path);
+  }
+});
+
+test('--register warm: flags an accusatory word as an advisory hit, without moving the score at all', () => {
+  const path = join(FIXTURES, 'register-warm-tmp.md');
+  writeFileSync(path, "What's the tell that someone's faking it?\n");
+  try {
+    const neutral = run('register-warm-tmp.md');
+    const warm = run('register-warm-tmp.md', ['--register', 'warm']);
+    assert.equal(warm.registerCheck.register, 'warm');
+    assert.ok(warm.registerCheck.hits.some((h) => h.category === 'accusatory'), 'the accusatory list must catch "faking"');
+    assert.equal(warm.score, neutral.score, 'a register hit must never change the Human Score');
+    assert.deepEqual(warm.hits, neutral.hits, 'register hits must be entirely separate from the scored hits array');
+  } finally {
+    rmSync(path);
+  }
+});
+
+test('--register direct: flags a hedging word as an advisory hit, without moving the score at all', () => {
+  const path = join(FIXTURES, 'register-direct-tmp.md');
+  writeFileSync(path, 'Maybe this approach could possibly work, I think.\n');
+  try {
+    const neutral = run('register-direct-tmp.md');
+    const direct = run('register-direct-tmp.md', ['--register', 'direct']);
+    assert.equal(direct.registerCheck.register, 'direct');
+    assert.ok(direct.registerCheck.hits.some((h) => h.category === 'hedging'), 'the hedging list must catch "maybe"/"possibly"/"i think"');
+    assert.equal(direct.score, neutral.score, 'a register hit must never change the Human Score');
+  } finally {
+    rmSync(path);
+  }
+});
+
+test('--register: an isolated single hit is not suppressed by tier-2 clustering (tier suppression only protects the score, which register never touches)', () => {
+  const path = join(FIXTURES, 'register-isolated-tmp.md');
+  writeFileSync(path, "There's nothing else unusual here, just one lone word: fake.\n");
+  try {
+    const warm = run('register-isolated-tmp.md', ['--register', 'warm']);
+    assert.ok(warm.registerCheck.hits.some((h) => h.pattern === 'fake'), 'a single, isolated register hit must still surface, unlike a scored tier-2 word would');
+  } finally {
+    rmSync(path);
+  }
+});
+
+test('--register: an unknown value is rejected with a clear error and non-zero exit', () => {
+  const { status, stderr } = spawnSync(process.execPath, [DETECT, '--mode', 'score', join(FIXTURES, 'human-sample.md'), '--register', 'loud'], {
+    cwd: FIXTURES,
+    encoding: 'utf8',
+  });
+  assert.notEqual(status, 0);
+  assert.match(stderr, /unknown --register/);
+});
+
+test('--mode score: registerCheck never appears, even with --register warm (advisory-only field is report-mode only)', () => {
+  const path = join(FIXTURES, 'register-score-mode-tmp.md');
+  writeFileSync(path, "What's the tell that someone's faking it?\n");
+  try {
+    const out = execFileSync(process.execPath, [DETECT, '--mode', 'score', join(FIXTURES, 'register-score-mode-tmp.md'), '--register', 'warm'], {
+      cwd: FIXTURES,
+      encoding: 'utf8',
+    });
+    const payload = JSON.parse(out);
+    assert.equal(payload.registerCheck, undefined);
+    assert.ok('score' in payload);
+  } finally {
+    rmSync(path);
+  }
+});
+
+test('a voice profile\'s own "## Register" field is picked up with no --register flag at all', () => {
+  const voicesDir = join(FIXTURES, '.clearfelt', 'voices');
+  const clearfeltDir = join(FIXTURES, '.clearfelt');
+  const alreadyExisted = existsSync(clearfeltDir);
+  const profilePath = join(voicesDir, 'warm-voice.md');
+  const path = join(FIXTURES, 'register-voice-tmp.md');
+  writeFileSync(path, "What's the tell that someone's faking it?\n");
+
+  withGlobalSettings(['## Voice', '', '| Setting | Default |', '|---|---|', '| voice.mode | multi |', ''], () => {
+    try {
+      mkdirSync(voicesDir, { recursive: true });
+      writeFileSync(profilePath, ['# Voice profile: warm-voice', '', '## Register', '', 'register: warm', ''].join('\n'));
+
+      const result = run('register-voice-tmp.md', ['--voice', 'warm-voice']);
+      assert.equal(result.registerCheck.register, 'warm');
+      assert.ok(result.registerCheck.hits.some((h) => h.category === 'accusatory'));
+    } finally {
+      rmSync(path);
+      if (existsSync(profilePath)) rmSync(profilePath);
+      if (!alreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+    }
+  });
+});
+
+test('register: an override file with no "## Register" section inherits the base file\'s register (extends:, same precedence as Sentence rhythm)', () => {
+  const voicesDir = join(FIXTURES, '.clearfelt', 'voices');
+  const clearfeltDir = join(FIXTURES, '.clearfelt');
+  const alreadyExisted = existsSync(clearfeltDir);
+  const basePath = join(voicesDir, 'general.md');
+  const overridePath = join(voicesDir, 'quiet.md');
+  const path = join(FIXTURES, 'register-inherit-tmp.md');
+  writeFileSync(path, "What's the tell that someone's faking it?\n");
+
+  withGlobalSettings(['## Voice', '', '| Setting | Default |', '|---|---|', '| voice.mode | multi |', ''], () => {
+    try {
+      mkdirSync(voicesDir, { recursive: true });
+      writeFileSync(basePath, ['# Voice profile: general', '', '## Register', '', 'register: warm', ''].join('\n'));
+      writeFileSync(overridePath, ['extends: general', '', '# Voice profile: quiet', ''].join('\n'));
+
+      const result = run('register-inherit-tmp.md', ['--voice', 'quiet']);
+      assert.equal(result.registerCheck.register, 'warm', 'no own "## Register" section means the base file\'s value applies');
+    } finally {
+      rmSync(path);
+      if (existsSync(basePath)) rmSync(basePath);
+      if (existsSync(overridePath)) rmSync(overridePath);
+      if (!alreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+    }
+  });
+});
+
+test('register: an override file\'s own "## Register" wins over the base file it extends', () => {
+  const voicesDir = join(FIXTURES, '.clearfelt', 'voices');
+  const clearfeltDir = join(FIXTURES, '.clearfelt');
+  const alreadyExisted = existsSync(clearfeltDir);
+  const basePath = join(voicesDir, 'general.md');
+  const overridePath = join(voicesDir, 'louder.md');
+  const path = join(FIXTURES, 'register-override-wins-tmp.md');
+  writeFileSync(path, 'Maybe this could possibly work.\n');
+
+  withGlobalSettings(['## Voice', '', '| Setting | Default |', '|---|---|', '| voice.mode | multi |', ''], () => {
+    try {
+      mkdirSync(voicesDir, { recursive: true });
+      writeFileSync(basePath, ['# Voice profile: general', '', '## Register', '', 'register: warm', ''].join('\n'));
+      writeFileSync(overridePath, ['extends: general', '', '# Voice profile: louder', '', '## Register', '', 'register: direct', ''].join('\n'));
+
+      const result = run('register-override-wins-tmp.md', ['--voice', 'louder']);
+      assert.equal(result.registerCheck.register, 'direct', 'the override file\'s own register must win over the base\'s');
+    } finally {
+      rmSync(path);
+      if (existsSync(basePath)) rmSync(basePath);
+      if (existsSync(overridePath)) rmSync(overridePath);
+      if (!alreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+    }
+  });
+});
+
+test('register: an invalid value inside a voice profile throws a clear error rather than silently defaulting', () => {
+  const voicesDir = join(FIXTURES, '.clearfelt', 'voices');
+  const clearfeltDir = join(FIXTURES, '.clearfelt');
+  const alreadyExisted = existsSync(clearfeltDir);
+  const profilePath = join(voicesDir, 'broken-register.md');
+  const path = join(FIXTURES, 'register-invalid-tmp.md');
+  writeFileSync(path, 'Some text.\n');
+
+  withGlobalSettings(['## Voice', '', '| Setting | Default |', '|---|---|', '| voice.mode | multi |', ''], () => {
+    try {
+      mkdirSync(voicesDir, { recursive: true });
+      writeFileSync(profilePath, ['# Voice profile: broken-register', '', '## Register', '', 'register: shouty', ''].join('\n'));
+
+      const { status, stderr } = spawnSync(
+        process.execPath,
+        [DETECT, '--mode', 'report', join(FIXTURES, 'register-invalid-tmp.md'), '--voice', 'broken-register'],
+        { cwd: FIXTURES, encoding: 'utf8' },
+      );
+      assert.notEqual(status, 0);
+      assert.match(stderr, /Invalid register/);
+    } finally {
+      rmSync(path);
+      if (existsSync(profilePath)) rmSync(profilePath);
+      if (!alreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+    }
+  });
+});

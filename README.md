@@ -50,7 +50,8 @@ Everything past this point, voice profiles, domain context, personal calibration
 - **A durable log of every write.** `/clearfelt rewrite` and `/clearfelt write` append to `.clearfelt/audit.log` on every approved write, the first record that survives past the terminal session that approved it.
 - **A code-verified preservation guarantee, not just a prompt instruction.** `scripts/check.mjs` deterministically diffs a rewrite candidate against its source: a locked span that changed, or a constraint that's missed, always blocks the write; a dropped or added number, date, proper noun, or quote surfaces as a disclosed warning by default.
 - **See exactly what's active before you run anything.** `/clearfelt explain` prints every resolved config setting and which layer set it (default, shipped, or your global override), plus voice/domain/hook state, in one place.
-- **Tested, not just trusted.** `node --test` runs a real regression suite (183 tests) against every script, not just `scripts/detect.mjs`; `node scripts/eval.mjs` checks the score against a labeled corpus and reports the pass rate honestly, including where it currently falls short; `node scripts/lint.mjs` catches repo-consistency drift (stale config defaults, an undocumented rule source, a malformed config row) before it ships.
+- **Voice register, an advisory tone check, never scored.** Set `register: direct` or `register: warm` in a voice profile (default: `neutral`, off) and `/clearfelt audit` flags words that don't match, hedging past the point of a real position, or accusatory language sharper than the voice calls for, as a plain note, never a score deduction. See `docs/decisions/0024-voice-register.md`.
+- **Tested, not just trusted.** `node --test` runs a real regression suite (197 tests) against every script, not just `scripts/detect.mjs`; `node scripts/eval.mjs` checks the score against a labeled corpus and reports the pass rate honestly, including where it currently falls short; `node scripts/lint.mjs` catches repo-consistency drift (stale config defaults, an undocumented rule source, a malformed config row) before it ships.
 
 ## Quick start
 
@@ -226,4 +227,4 @@ MIT. See [LICENSE](LICENSE).
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md). Current version: 0.6.0.
+See [CHANGELOG.md](CHANGELOG.md). Current version: 0.7.0.

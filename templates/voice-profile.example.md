@@ -40,6 +40,16 @@ A sentence or two describing how you naturally write: short and punchy, long and
 
 Default (no profile set up yet): mixed length, casual, contractions welcome.
 
+## Register
+
+"Sound like a human" isn't one target: real humans range from blunt to diplomatic. This field states which end of that range this voice sits at, per [docs/decisions/0024](../docs/decisions/0024-voice-register.md). Never affects the score; `/clearfelt audit` surfaces a mismatch as an advisory note only.
+
+- `neutral` (default): no tone check runs at all.
+- `direct`: flags hedging words that soften a claim past the point of taking a real position (maybe, perhaps, I think...).
+- `warm`: flags accusatory words that read as harsher than most human writing needs to be (fake, fraud, lying...).
+
+register: neutral
+
 ## Non-negotiables
 
 Hard rules that should never be broken, regardless of intensity setting.

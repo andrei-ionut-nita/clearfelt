@@ -12,7 +12,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { acquireLock, releaseLock } from './helpers/global-settings.mjs';
-import { parseBulletLine, parseRuleFile, loadRuleDir, mergeLocal, findHits, loadRules } from '../scripts/lib/rules.mjs';
+import { parseBulletLine, parseRuleFile, loadRuleDir, mergeLocal, findHits, loadRules, loadRegisterRules } from '../scripts/lib/rules.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -238,4 +238,63 @@ test('findHits: a config with no tier2_cluster_window key falls back to the defa
   const overrides = new Set();
   const withDefault = findHits(text, rules, {}, overrides);
   assert.ok(withDefault.some((h) => h.pattern === 'impactful'), 'the default 40-word window must still cluster these two occurrences');
+});
+
+// ---- loadRegisterRules (docs/decisions/0024) ----
+
+test('loadRegisterRules: returns the accusatory and hedging lists as separate arrays, not merged into one', () => {
+  const { accusatory, hedging } = loadRegisterRules();
+  assert.ok(accusatory.length > 0, 'rules/register/accusatory.md must load at least one entry');
+  assert.ok(hedging.length > 0, 'rules/register/hedging.md must load at least one entry');
+  assert.ok(accusatory.every((r) => r.category === 'accusatory'));
+  assert.ok(hedging.every((r) => r.category === 'hedging'));
+  assert.ok(
+    accusatory.every((r) => !hedging.some((h) => h.pattern === r.pattern)),
+    'the two lists should not share a pattern; they flag opposite directions of mismatch',
+  );
+});
+
+test('loadRegisterRules: entries are never returned by loadRules (register hits must stay out of the scored set)', () => {
+  const { all } = loadRules({});
+  const { accusatory, hedging } = loadRegisterRules();
+  for (const r of [...accusatory, ...hedging]) {
+    assert.ok(
+      !all.some((e) => e.category === r.category && e.pattern === r.pattern),
+      `register entry "${r.pattern}" (${r.category}) must not appear in loadRules()'s scored "all" set`,
+    );
+  }
+});
+
+// ---- rules/antipatterns/corporate_neologisms.md ----
+
+test('corporate_neologisms: "diligences it" (verbed noun + pronoun object) is flagged, but "due diligence document" and "diligence a term sheet" are not', () => {
+  const path = writeFixture(
+    'corporate-neologism-test.md',
+    "Nobody diligences it the way they'd diligence a term sheet. This is a due diligence document.\n",
+  );
+  try {
+    const result = run('corporate-neologism-test.md');
+    const hits = result.hits.filter((h) => h.category === 'corporate_neologisms');
+    assert.equal(hits.length, 1, 'only the pronoun-object form should be flagged');
+    assert.match(hits[0].snippet, /diligences it/);
+  } finally {
+    rmSync(path);
+  }
+});
+
+// ---- rules/antipatterns/corporate_neologisms.md ----
+
+test('corporate_neologisms: "diligences it" (verbed noun + pronoun object) is flagged, but "due diligence document" and "diligence a term sheet" are not', () => {
+  const path = writeFixture(
+    'corporate-neologism-test.md',
+    "Nobody diligences it the way they'd diligence a term sheet. This is a due diligence document.\n",
+  );
+  try {
+    const result = run('corporate-neologism-test.md');
+    const hits = result.hits.filter((h) => h.category === 'corporate_neologisms');
+    assert.equal(hits.length, 1, 'only the pronoun-object form should be flagged');
+    assert.match(hits[0].snippet, /diligences it/);
+  } finally {
+    rmSync(path);
+  }
 });

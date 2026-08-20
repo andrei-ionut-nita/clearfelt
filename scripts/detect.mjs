@@ -7,13 +7,19 @@
  * scoring, reporting).
  *
  * Usage:
- *   node scripts/detect.mjs --mode report <path> [--save-baseline <file>] [--baseline <file>] [--voice <name>]
+ *   node scripts/detect.mjs --mode report <path> [--save-baseline <file>] [--baseline <file>] [--voice <name>] [--register <value>]
  *   node scripts/detect.mjs --mode score <path>
  */
 
 import { existsSync, readdirSync, statSync, realpathSync } from 'node:fs';
 import { join, resolve, sep, extname } from 'node:path';
-import { loadConfig, loadVoiceProfileOverrides, loadDomainOverrides, loadVoiceProfileCalibration } from './lib/config.mjs';
+import {
+  loadConfig,
+  loadVoiceProfileOverrides,
+  loadDomainOverrides,
+  loadVoiceProfileCalibration,
+  loadVoiceRegister,
+} from './lib/config.mjs';
 import { loadRules } from './lib/rules.mjs';
 import { runFile } from './lib/report.mjs';
 
@@ -56,6 +62,9 @@ Options:
   --exempt-repetition <text> A phrase repeated on purpose (anaphora, a hook/CTA callback), excluded
                               from the repeated-phrase penalty. Repeatable. The tool never guesses
                               intent here, so this states it: see docs/decisions/0022.
+  --register <value>         Override the resolved voice's tone register for this run:
+                              neutral (default) | direct | warm. See docs/decisions/0024.
+                              Never affects the score, only --mode report's registerCheck field.
   --help, -h                 Print this message and exit.
 
 <path|directory> must resolve inside the current project directory (process.cwd()); clearfelt refuses to scan a path outside it.`;
@@ -69,6 +78,7 @@ function parseArgs(argv) {
     else if (a === '--baseline') args.baseline = argv[++i];
     else if (a === '--voice') args.voice = argv[++i];
     else if (a === '--exempt-repetition') args.exemptRepetition.push(argv[++i]);
+    else if (a === '--register') args.register = argv[++i];
     else if (a === '--help' || a === '-h') args.help = true;
     else args.paths.push(a);
   }
@@ -96,6 +106,12 @@ function main() {
     process.exit(1);
   }
 
+  const validRegisters = new Set(['neutral', 'direct', 'warm']);
+  if (args.register && !validRegisters.has(args.register)) {
+    console.error(`Error: unknown --register "${args.register}". Expected one of: ${[...validRegisters].join(', ')}`);
+    process.exit(1);
+  }
+
   const targetPath = resolve(args.paths[0]);
   if (!existsSync(targetPath)) {
     console.error(`Error: path not found: ${targetPath}`);
@@ -114,9 +130,14 @@ function main() {
   const voiceOverrides = loadVoiceProfileOverrides(process.cwd(), config, args.voice);
   const domainOverrides = loadDomainOverrides(process.cwd());
   const overrides = new Set([...voiceOverrides, ...domainOverrides]);
+  // CLI flag wins over the resolved voice profile, same precedence as
+  // --exempt-repetition being a per-invocation add-on: useful for testing a
+  // register without editing a voice file, but the voice profile (docs/decisions/0024)
+  // is where a project states its actual, persistent choice.
+  const register = args.register ?? loadVoiceRegister(process.cwd(), config, args.voice);
 
   if (!statSync(targetPath).isDirectory()) {
-    const { format, payload } = runFile(targetPath, args, rules, config, overrides);
+    const { format, payload } = runFile(targetPath, args, rules, config, overrides, register);
     console.log(format === 'compact' ? JSON.stringify(payload) : JSON.stringify(payload, null, 2));
     return;
   }
@@ -131,7 +152,7 @@ function main() {
     process.exit(1);
   }
 
-  const perFile = files.map((file) => runFile(file, args, rules, config, overrides).payload);
+  const perFile = files.map((file) => runFile(file, args, rules, config, overrides, register).payload);
 
   if (args.mode === 'scan') {
     console.log(JSON.stringify({ target: targetPath, isDirectory: true, files: perFile }, null, 2));

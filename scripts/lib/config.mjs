@@ -215,6 +215,51 @@ export function loadVoiceProfileOverrides(targetDir, config, voiceName) {
   return overrides;
 }
 
+// ---- register (docs/decisions/0024) ----
+
+const VALID_REGISTERS = new Set(['neutral', 'direct', 'warm']);
+
+// Reads a "register: <value>" line from a voice file's "## Register"
+// section, the same shape as domain.md's inline "risk_tier: standard" fields.
+// Only matched inside that section (not anywhere in the file) so a
+// non-negotiable that happens to mention the word "register" in passing can
+// never be mistaken for the directive.
+function readRegisterField(text) {
+  const sectionStart = text.indexOf('## Register');
+  if (sectionStart === -1) return null;
+  const section = text.slice(sectionStart).split(/\n##\s+/)[0];
+  const m = section.match(/^register:\s*(\S+)\s*$/m);
+  if (!m) return null;
+  const value = m[1].toLowerCase();
+  if (!VALID_REGISTERS.has(value)) {
+    throw new Error(
+      `Invalid register: "${m[1]}" (expected one of: ${[...VALID_REGISTERS].join(', ')}). ` +
+        'See docs/decisions/0024-voice-register.md.',
+    );
+  }
+  return value;
+}
+
+// Precedence, matching Sentence rhythm's own rule in ADR 0021 (a prose-style
+// field: override replaces base outright if set, otherwise inherits base's
+// value, otherwise the shipped default): a voice file's own "## Register"
+// wins if present; else the base file it extends, if any; else 'neutral'.
+// Neutral is the correct default, not merely the fallback: it's the one
+// value where no register list is ever consulted, so a project that never
+// touches this feature sees byte-identical behavior to before it existed.
+export function loadVoiceRegister(targetDir, config, voiceName) {
+  const { overrideText, baseText } = resolveVoiceChain(targetDir, config, voiceName);
+  if (overrideText) {
+    const own = readRegisterField(overrideText);
+    if (own) return own;
+  }
+  if (baseText) {
+    const inherited = readRegisterField(baseText);
+    if (inherited) return inherited;
+  }
+  return 'neutral';
+}
+
 // ---- domain profile precedence ----
 
 export function loadDomainOverrides(targetDir) {

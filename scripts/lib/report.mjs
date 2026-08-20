@@ -6,7 +6,7 @@
 
 import { readFileSync, existsSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { stripExcludedRegions, findHits } from './rules.mjs';
+import { stripExcludedRegions, findHits, loadRegisterRules } from './rules.mjs';
 import { computeScore, computeReadability } from './score.mjs';
 import { loadDomainReadabilityTarget } from './config.mjs';
 import { languageConfidence } from './language.mjs';
@@ -73,13 +73,41 @@ export function diffAgainstBaseline(hits, baselinePath) {
 // once per file and aggregate. `format` mirrors the exact JSON.stringify
 // call each mode used before this was extracted (compact for score, pretty
 // for report/scan), so single-file output is byte-for-byte unchanged.
-export function runFile(targetPath, args, rules, config, overrides) {
+export function runFile(targetPath, args, rules, config, overrides, register = 'neutral') {
   const text = readFileSync(targetPath, 'utf8');
   const scanText = stripExcludedRegions(text);
 
   if (args.mode === 'scan') {
     const allOccurrences = findHits(scanText, rules, config, overrides, { includeSuppressed: true });
     return { format: 'pretty', payload: { target: targetPath, occurrences: allOccurrences } };
+  }
+
+  // Register hits (docs/decisions/0024) are computed from a wholly separate
+  // list than `rules` above and never touch `allHits` below, so they can
+  // never reach computeScore: a register mismatch is an advisory note about
+  // tone, not evidence the text reads AI-written, and folding it into the
+  // Human Score would make that one number mean two different things
+  // depending on a voice-profile setting the reader of a bare score can't
+  // see. 'neutral' (the default) consults neither list, so a project that
+  // never sets register: sees this cost nothing, not even an extra hit scan.
+  // includeSuppressed: true bypasses findHits's tier-2/tier-3 clustering
+  // logic, which exists only to keep the SCORE honest against a single
+  // legitimate word choice (see rules.mjs's own comment on this). Register
+  // hits never reach computeScore, so that suppression has nothing to
+  // protect here and would only silently drop a real, isolated mismatch
+  // (found via a one-hit test case: a lone "faking" in a short sentence was
+  // dropped because tier 2 requires a second nearby hit, a rule that makes
+  // sense for a scored deduction and none at all for an advisory note).
+  let registerHits = [];
+  if (register !== 'neutral') {
+    const registerRules = loadRegisterRules();
+    registerHits = findHits(
+      scanText,
+      register === 'warm' ? registerRules.accusatory : registerRules.hedging,
+      config,
+      overrides,
+      { includeSuppressed: true },
+    );
   }
 
   // Computed once here (not just in report mode) so /clearfelt write and
@@ -162,6 +190,7 @@ export function runFile(targetPath, args, rules, config, overrides) {
       patternSummary,
       hits: reportedHits,
       readability,
+      ...(register !== 'neutral' ? { registerCheck: { register, hits: registerHits } } : {}),
     },
   };
 }

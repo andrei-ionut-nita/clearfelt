@@ -33,3 +33,4 @@ Every entry below is a full ADR: a real architectural call, something that chang
 - [0021: Platform-scoped voice inheritance, driven by setup](0021-platform-scoped-voice-inheritance.md)
 - [0022: Declared repetition exemptions (--exempt-repetition)](0022-repetition-exemptions.md)
 - [0023: A disclosed language-confidence warning, not silent misscoring](0023-language-scope-warning.md)
+- [0024: Voice register, a non-scored tone-match advisory](0024-voice-register.md)

@@ -102,6 +102,24 @@ export function loadRules(config = {}) {
   return { antipatterns, bannedWords, all: [...antipatterns, ...bannedWords] };
 }
 
+// Register lists (docs/decisions/0024) are a separate load path from
+// loadRules() on purpose: they never feed computeScore, so they don't belong
+// in the "all" set that does, and they're not subject to the
+// rules.include_unresolved filter, since that filter exists to gate a scored
+// deduction on an unverifiable AI-detection claim, and a register hit is
+// neither scored nor an AI-detection claim (see rules/register/*.md's own
+// header on why these entries carry source: editorial instead of a
+// docs/SOURCES.md key). Both lists load unconditionally and cheaply; which
+// one applies to a given document is decided by the caller from the
+// resolved register value, not by this loader.
+export function loadRegisterRules() {
+  const entries = loadRuleDir(join(ROOT, 'rules', 'register'));
+  return {
+    accusatory: entries.filter((r) => r.category === 'accusatory'),
+    hedging: entries.filter((r) => r.category === 'hedging'),
+  };
+}
+
 // ---- matching ----
 
 export function escapeRegex(str) {
