@@ -2,6 +2,14 @@
 
 Short records of the real calls made while designing clearfelt, kept here so the reasoning survives past the conversation that produced it.
 
+## ADR vs Note
+
+Every entry below is a full ADR: a real architectural call, something that changes how existing pieces of the system compose (0021's `extends:` changed voice resolution itself; 0011's deduction cap changed how every score is computed). That bar is right for changes at that scale, and wrong to apply to everything: two ADRs came out of one real integration over two days (0021, 0022), and per-edge-case full-ADR documentation doesn't scale past a single user without either becoming a bottleneck or quietly eroding into something shorter than an ADR in practice, while still being called one.
+
+`docs/decisions/notes/` is the lighter tier for the other kind of change: one new, optional, backward-compatible capability that doesn't touch how anything existing behaves (a new CLI flag with a default that changes nothing for callers who don't pass it, one new exported function nothing else is required to call). The actual test: does this change how two existing pieces compose, or does it only add something new alongside them? The former is an ADR. The latter is a Note, same short Context/Decision/Why shape, no separate Consequences section required since there usually isn't one beyond "this is additive." `--exempt-repetition` (0022) is a real, if retroactive, example of a change that could have been a Note: it added one optional parameter to one function, default `[]`, byte-identical behavior for every existing caller. It stayed a full ADR since it was already written that way before this tier existed; nothing here renumbers or downgrades past decisions.
+
+## ADRs
+
 - [0001: Deterministic, script-backed scoring instead of LLM judgment](0001-deterministic-scored-detection.md)
 - [0002: Markdown, not JSON, for every user-facing rule and config file](0002-markdown-only-data-files.md)
 - [0003: XML for the rewrite pipeline, despite the markdown-only rule](0003-xml-pipeline-format.md)
@@ -21,3 +29,7 @@ Short records of the real calls made while designing clearfelt, kept here so the
 - [0017: Windowed vocabulary diversity (MATTR), replacing Root TTR](0017-windowed-vocabulary-diversity.md)
 - [0018: Fixes from a three-persona review (writing, engineering, pipeline design)](0018-multi-persona-review-fixes.md)
 - [0019: Model-judged command routing, not a `commands/` directory](0019-model-judged-command-routing.md)
+- [0020: Confirm-before-write asks where, not just whether](0020-write-target-menu.md)
+- [0021: Platform-scoped voice inheritance, driven by setup](0021-platform-scoped-voice-inheritance.md)
+- [0022: Declared repetition exemptions (--exempt-repetition)](0022-repetition-exemptions.md)
+- [0023: A disclosed language-confidence warning, not silent misscoring](0023-language-scope-warning.md)

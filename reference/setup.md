@@ -16,6 +16,8 @@ Ask exactly one question per turn, through the harness's own structured single-c
 
 If the user says something like "let's just go with defaults" or "skip the interview," stop the wizard immediately, confirm that's what they want, and write both files straight from the bundled defaults per Step 4 / domain Step 3 below. Don't keep asking questions after that.
 
+**This skip path is a first-class option, not something the user has to already know to ask for.** Setup isn't a prerequisite either, see `README.md`'s "60-second start", `/clearfelt audit`/`rewrite`/`write` already work with zero configuration, bundled defaults apply and nothing blocks. Mention both of these plainly before the first question: this interview produces a better-calibrated result, but skipping it entirely, or answering just one or two questions and stopping, both work fine too.
+
 ## Voice mode
 
 Check `voice.mode` in `clearfelt.config.md` (it's a skill-level setting, shared across every project using this install, not something this run flips silently).
@@ -49,11 +51,24 @@ Check `voice.mode` in `clearfelt.config.md` (it's a skill-level setting, shared 
 5. **Personal calibration, only when a sample or directory was given (paste or Other-typed text does not count, this step needs a real file or directory path)**: run `node scripts/calibrate.mjs <path>` and read its JSON output (`baseline_mattr`, `baseline_burstiness_cv`, `baseline_paragraph_cv`, `wordCount`, and an optional `warning` on a thin sample). Show the user the numbers and, if `warning` is present, mention it plainly (calibration still proceeds, thin or not, it's their call) rather than silently deciding for them. This is a compute step only, not a new interview question, don't ask the picker anything here.
 6. Write or update `.clearfelt/voice-profile.md` using the structure in `templates/voice-profile.example.md`, filling in what was learned and leaving the rest as bundled defaults. Prepend the source note from step 2 first if this run took the keep-existing-file path. If step 5 ran, fill in the "Personal calibration (computed)" section's four fields from its output (`sample_word_count` from `wordCount`); otherwise leave all four as `(unset)` so the shipped generic defaults keep applying.
 
-**`multi` (opt-in, for projects with more than one writer):**
+**`multi` (opt-in, for more than one writer sharing a project, more than one platform one writer publishes to, or both):**
+
+0. Ask through the picker what this project's multi-voice is for: **Multiple writers sharing this project** / **Multiple platforms for one writer** / **Both**. This determines which of the three flows below runs; it doesn't change the underlying file format (`.clearfelt/voices/<name>.md` either way), just what the wizard asks and what `<name>` ends up meaning.
+
+**Multiple writers** (today's original flow, unchanged):
 
 1. List any existing files under `.clearfelt/voices/`. Ask through the picker whether this run is adding a new voice or updating an existing one: New voice / Update an existing one (listing the names found).
 2. Ask for a name through the picker (an open question: an example like "e.g. sarah" as one option, an Other-pointing option, no meaningful skip here since the filename is required to continue) (used as the filename, `.clearfelt/voices/<name>.md`).
 3. Run the same one-question-at-a-time interview as `single` mode above, writing to `.clearfelt/voices/<name>.md` instead of `.clearfelt/voice-profile.md`.
+
+**Multiple platforms for one writer** (see [docs/decisions/0021](../docs/decisions/0021-platform-scoped-voice-inheritance.md) for the design this implements):
+
+1. Always create or update `.clearfelt/voices/general.md` first, no `extends:` line, running the same one-question-at-a-time interview as `single` mode (steps 2-6 above). This is the base every platform below extends, and it always exists even if the writer only ever answers platform-specific questions afterward.
+2. Then loop, once per platform: ask through the picker for a platform name. **The picker offers no named-platform buttons, only General-as-base is a fixed concept here, not a specific platform**, and free text via **Other** for anything real (LinkedIn, X, a newsletter, print, an internal wiki, whatever the writer actually publishes to), with a couple of platforms named only as illustrative example text inside the question's description, never as their own dedicated option. A hardcoded platform button here would fail this project's own generality test (`docs/ROADMAP.md`: "can it be described without naming a platform, a person, or a project?") the same way a feature request for platform-specific virality scoring already failed it, just at smaller scale.
+3. For the named platform: write `.clearfelt/voices/<platform>.md` starting with `extends: general`, then ask only what's platform-specific, one question at a time: "Anything about how you write differs on \<platform\>? A different hook length, a rule that applies here but not generally, something the general voice gets wrong for this platform." Skippable like every other setup question; skipping still writes a valid file, just `extends: general` with nothing else, correctly inheriting everything from the base.
+4. After each platform, ask a plain yes/no: "Add another platform?" Loop back to step 2 if yes, stop if no. This is a loop over an open-ended list, not a multi-select over a fixed one, since the wizard has no way to know a writer's platforms in advance.
+
+**Both**: run the writer loop (steps 1-2 above) to resolve or create a writer name, then run the platform loop nested under that writer (`.clearfelt/voices/<writer>-general.md`, `.clearfelt/voices/<writer>-<platform>.md` extending it). This combination is a documented sketch in ADR 0021, not a fully specified flow, since no real project combining both has been observed yet; if one comes up, work out the exact wording then rather than guessing ahead of a real case.
 
 If the user wants multi-voice but `voice.mode` is currently `single`, explain that this is a global setting shared across every project using this skill install, then offer to write `voice.mode: multi` into `~/.clearfelt/settings.md` (the user's home directory, never touched by a skill update) before continuing. Don't edit `clearfelt.config.md` directly for this: that file lives inside the skill's own repo and gets reset on the next update, so an edit there wouldn't stick.
 

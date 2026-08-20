@@ -2,6 +2,26 @@
 
 Copy this file to `.clearfelt/voice-profile.md` in your own project (or run `/clearfelt setup`, which writes it for you). `/clearfelt rewrite` reads it before rewriting anything, and a preference stated here always wins over the shipped rule files.
 
+## Platform-scoped inheritance (optional, `voice.mode: multi` only)
+
+A file under `.clearfelt/voices/<name>.md` can start with a one-line `extends: <base-name>` directive, naming another file in the same `voices/` directory (e.g. `extends: general`). One hop only, no chained inheritance. See [docs/decisions/0021](../docs/decisions/0021-platform-scoped-voice-inheritance.md) for the full design; the short version:
+
+```
+extends: general
+
+# Voice profile: linkedin
+
+## Words I want to keep using
+
+- (only what's specific to this platform, added on top of general's list)
+```
+
+- **List sections** ("Words I want to keep using," "Words to avoid," "Non-negotiables"): union. This file's entries add to the base file's, never replace them.
+- **Sentence rhythm**: this file's own text wins if set, otherwise inherits the base file's.
+- **Personal calibration**: inherits the base file's computed numbers unless this file has its own complete calibration section, in which case this file's numbers win outright.
+
+Leave this line out entirely for a plain, standalone profile (single-writer mode, or a multi-voice profile for a different writer, not a platform): everything below behaves exactly as it always has.
+
 ## Words I want to keep using
 
 List words or phrases here that the base rule files would otherwise flag but that you actually like. One per line. `/clearfelt rewrite` will never touch these.

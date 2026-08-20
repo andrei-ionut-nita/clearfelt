@@ -50,21 +50,25 @@ Modes:
   scan     Every rule occurrence with tier-suppression bypassed, used by /clearfelt rewrite's editing tiers.
 
 Options:
-  --save-baseline <file>  Snapshot this run's hits to <file> for later --baseline diffing.
-  --baseline <file>       Only report hits new since a previous --save-baseline snapshot.
-  --voice <name>          Voice profile to apply when clearfelt.config.md's voice.mode is "multi".
-  --help, -h              Print this message and exit.
+  --save-baseline <file>     Snapshot this run's hits to <file> for later --baseline diffing.
+  --baseline <file>          Only report hits new since a previous --save-baseline snapshot.
+  --voice <name>             Voice profile to apply when clearfelt.config.md's voice.mode is "multi".
+  --exempt-repetition <text> A phrase repeated on purpose (anaphora, a hook/CTA callback), excluded
+                              from the repeated-phrase penalty. Repeatable. The tool never guesses
+                              intent here, so this states it: see docs/decisions/0022.
+  --help, -h                 Print this message and exit.
 
 <path|directory> must resolve inside the current project directory (process.cwd()); clearfelt refuses to scan a path outside it.`;
 
 function parseArgs(argv) {
-  const args = { mode: 'report', paths: [], help: false };
+  const args = { mode: 'report', paths: [], help: false, exemptRepetition: [] };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--mode') args.mode = argv[++i];
     else if (a === '--save-baseline') args.saveBaseline = argv[++i];
     else if (a === '--baseline') args.baseline = argv[++i];
     else if (a === '--voice') args.voice = argv[++i];
+    else if (a === '--exempt-repetition') args.exemptRepetition.push(argv[++i]);
     else if (a === '--help' || a === '-h') args.help = true;
     else args.paths.push(a);
   }

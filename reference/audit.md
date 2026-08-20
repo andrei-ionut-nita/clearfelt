@@ -10,10 +10,11 @@ Read-only scan. Never edits the target.
 4. Parse the JSON and present it following [reference/format/audit.md](format/audit.md)'s single-file template: filename, plain-language verdict, one-sentence reason first, then `categoryPoints` as the "Why" table, `patternSummary` (its `points` field, not raw severity) as the "Where" table, `breakdown.impacts` as "The full math" table, readability as its own table with plain-language bands, commentary (if any) as short bullets. Not a prose summary.
    - All three data tables come pre-sorted by the script (points lost, descending). Present them in that order, don't re-sort by category name or rule-file order: the reader should see the biggest driver first without having to scan for it.
    - Always show the full-math table, not only when asked. Two files can land on the same final score for different reasons (zero deductions left vs. adjustments cancelling out), and that table is what makes the reason legible instead of looking like a bug.
-5. Every hit carries a `source` key. Mention it briefly (e.g. "no-ai-slop pattern" or "camaraderie: flagged per research, unresolved citation, see docs/SOURCES.md") if the user asks why something was flagged, rather than presenting the rule as clearfelt's own unexplained opinion.
-6. If `.clearfelt/domain.md` exists, mention once that some hits may already be suppressed by its exemption list, same framing as the voice-profile-precedence note.
-7. Do not edit the file. If the user wants it fixed, point them at `/clearfelt rewrite`.
-8. If the user asks for a durable copy of this result (not by default, only when asked), write the rendered report to `reports/<slug>-<date>.md` (creating `reports/` if needed; it's gitignored, opt-in, never a default write target, see `CLAUDE.md`), using a filename slug derived from the target path. Confirm the path written.
+5. If the JSON has a `scoreReliability: "low"` field (docs/decisions/0023), present its `languageWarning` plainly before anything else in the breakdown, the same forward placement risk_tier: sensitive gets: this score may not mean what it looks like it means, not a footnote to skim past. Don't suppress or re-word it away.
+7. Every hit carries a `source` key. Mention it briefly (e.g. "no-ai-slop pattern" or "camaraderie: flagged per research, unresolved citation, see docs/SOURCES.md") if the user asks why something was flagged, rather than presenting the rule as clearfelt's own unexplained opinion.
+8. If `.clearfelt/domain.md` exists, mention once that some hits may already be suppressed by its exemption list, same framing as the voice-profile-precedence note.
+9. Do not edit the file. If the user wants it fixed, point them at `/clearfelt rewrite`.
+10. If the user asks for a durable copy of this result (not by default, only when asked), write the rendered report to `reports/<slug>-<date>.md` (creating `reports/` if needed; it's gitignored, opt-in, never a default write target, see `CLAUDE.md`), using a filename slug derived from the target path. Confirm the path written.
 
 ## Human Score formula
 

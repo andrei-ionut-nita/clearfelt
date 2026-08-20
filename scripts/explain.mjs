@@ -16,6 +16,8 @@ import {
   loadConfigWithProvenance,
   extractBulletSection,
   loadVoiceProfileCalibration,
+  resolveVoiceChain,
+  parseCalibrationSection,
 } from './lib/config.mjs';
 import { readState } from './hook.mjs';
 
@@ -44,28 +46,48 @@ function explainVoice(config, voiceName) {
   // fallback is needed here, unlike explainDomain's field()-parsed values
   // below, which genuinely can be absent from a real domain.md.
   const mode = config['voice.mode'].value;
-  const profilePath =
-    mode === 'multi' && voiceName
-      ? join(process.cwd(), '.clearfelt', 'voices', `${voiceName}.md`)
-      : join(process.cwd(), '.clearfelt', 'voice-profile.md');
-  const exists = existsSync(profilePath);
-  const keptWordsCount = exists
-    ? extractBulletSection(readFileSync(profilePath, 'utf8'), '## Words I want to keep using').size
-    : 0;
   // Reuses config's own resolved value here (raw config, not {value, source}
-  // provenance) since loadVoiceProfileCalibration wants a plain "which
-  // voice.mode" string, matching how detect.mjs itself resolves it.
+  // provenance) since resolveVoiceChain/loadVoiceProfileCalibration want a
+  // plain "which voice.mode" string, matching how detect.mjs itself resolves it.
   const rawConfig = { 'voice.mode': mode };
+  const { overridePath, overrideText, baseName, basePath, baseText } = resolveVoiceChain(
+    process.cwd(),
+    rawConfig,
+    voiceName,
+  );
+  const profilePath = overridePath;
+  const exists = overrideText !== null;
+
+  const ownKeptWords = exists ? extractBulletSection(overrideText, '## Words I want to keep using') : new Set();
+  const baseKeptWords = baseText ? extractBulletSection(baseText, '## Words I want to keep using') : new Set();
+  const keptWordsCount = new Set([...ownKeptWords, ...baseKeptWords]).size;
+
   const calibration = loadVoiceProfileCalibration(process.cwd(), rawConfig, voiceName);
+  // ADR 0021 provenance: which file's calibration section actually won,
+  // matching the "override wins outright, else inherit base" merge policy,
+  // not just the flattened numbers.
+  const ownCalibrationCount = exists ? Object.keys(parseCalibrationSection(overrideText)).length : 0;
+  const calibrationSource =
+    Object.keys(calibration).length === 0
+      ? 'none'
+      : ownCalibrationCount > 0
+        ? overridePath
+        : `${basePath} (inherited via extends: ${baseName})`;
+
   return {
     mode,
     profilePath,
     exists,
+    extends: baseName,
+    basePath,
     keptWordsCount,
+    keptWordsFromBase: baseName ? baseKeptWords.size : null,
+    keptWordsFromOverride: baseName ? ownKeptWords.size : null,
     personalCalibration:
       Object.keys(calibration).length > 0
         ? calibration
         : 'not computed, run /clearfelt setup with a writing sample or corpus, generic defaults apply',
+    personalCalibrationSource: calibrationSource,
   };
 }
 

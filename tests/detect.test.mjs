@@ -318,6 +318,100 @@ test('voice.mode: multi with --voice <name>: .clearfelt/voices/<name>.md "Words 
   });
 });
 
+test('extends: a word listed only in the base file is still suppressed through a platform override (union, ADR 0021)', () => {
+  const voicesDir = join(FIXTURES, '.clearfelt', 'voices');
+  const clearfeltDir = join(FIXTURES, '.clearfelt');
+  const alreadyExisted = existsSync(clearfeltDir);
+  const basePath = join(voicesDir, 'general.md');
+  const overridePath = join(voicesDir, 'linkedin.md');
+
+  withGlobalSettings(['## Voice', '', '| Setting | Default |', '|---|---|', '| voice.mode | multi |', ''], () => {
+    try {
+      const baseline = run('ai-heavy-sample.md');
+      assert.ok(
+        baseline.hits.some((h) => h.pattern.toLowerCase() === 'delve'),
+        'ai-heavy-sample.md must trigger the "delve" hit for this override test to mean anything',
+      );
+
+      mkdirSync(voicesDir, { recursive: true });
+      // "delve" lives ONLY in the base file, never repeated in the override.
+      writeFileSync(basePath, ['# Voice profile: general', '', '## Words I want to keep using', '', '- delve', ''].join('\n'));
+      writeFileSync(overridePath, ['extends: general', '', '# Voice profile: linkedin', ''].join('\n'));
+
+      const withVoice = run('ai-heavy-sample.md', ['--voice', 'linkedin']);
+      assert.ok(
+        !withVoice.hits.some((h) => h.pattern.toLowerCase() === 'delve'),
+        'a base-only kept word must still suppress the hit when scoring through the platform override that extends it',
+      );
+    } finally {
+      if (existsSync(basePath)) rmSync(basePath);
+      if (existsSync(overridePath)) rmSync(overridePath);
+      if (!alreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---- --exempt-repetition (ADR 0022) ----
+
+test('--exempt-repetition: a phrase repeated on purpose stops counting against repetitionPenalty, and is echoed back in the report', () => {
+  const callbackFile = join(FIXTURES, 'repeated-callback-tmp.md');
+  writeFileSync(
+    callbackFile,
+    'The recruiter goes quiet exactly when you need them least.\n\n' +
+      'Who has shown up for you, not before it, but after you need them least?\n',
+  );
+  try {
+    const baseline = run('repeated-callback-tmp.md');
+    const withExemption = run('repeated-callback-tmp.md', ['--exempt-repetition', 'you need them least']);
+    assert.ok(
+      withExemption.breakdown.repetitionPenalty <= baseline.breakdown.repetitionPenalty,
+      'exempting the repeated callback phrase must not increase the repetition penalty',
+    );
+    assert.deepEqual(withExemption.exemptRepetition, ['you need them least']);
+    assert.equal(baseline.exemptRepetition, undefined);
+  } finally {
+    rmSync(callbackFile);
+  }
+});
+
+test('--exempt-repetition: repeatable, multiple phrases can be exempted in one run', () => {
+  const { status, stdout } = spawnSync(
+    process.execPath,
+    [DETECT, '--mode', 'report', join(FIXTURES, 'human-sample.md'), '--exempt-repetition', 'one', '--exempt-repetition', 'two'],
+    { cwd: FIXTURES, encoding: 'utf8' },
+  );
+  assert.equal(status, 0);
+  const payload = JSON.parse(stdout);
+  assert.deepEqual(payload.exemptRepetition, ['one', 'two']);
+});
+
+// ---- language-confidence warning (ADR 0023) ----
+
+test('a non-English document reports scoreReliability/languageConfidence/languageWarning', () => {
+  const result = run('non-english-sample.md');
+  assert.equal(result.scoreReliability, 'low');
+  assert.ok(typeof result.languageConfidence === 'number' && result.languageConfidence < 0.15);
+  assert.match(result.languageWarning, /may not be English/);
+});
+
+test('--mode score also carries the language warning, not just --mode report: prompts/write_loop.xml and audit_loop.xml only ever call --mode score for their iterative scoring pass', () => {
+  const out = execFileSync(
+    process.execPath,
+    [DETECT, '--mode', 'score', join(FIXTURES, 'non-english-sample.md')],
+    { cwd: FIXTURES, encoding: 'utf8' },
+  );
+  const result = JSON.parse(out);
+  assert.equal(result.scoreReliability, 'low');
+  assert.ok(typeof result.languageConfidence === 'number');
+});
+
+test('a real English document has no languageWarning field at all, report unchanged from before ADR 0023', () => {
+  const result = run('human-sample.md');
+  assert.equal(result.scoreReliability, undefined);
+  assert.equal(result.languageConfidence, undefined);
+  assert.equal(result.languageWarning, undefined);
+});
+
 // ---- CLI surface: modes, directory scanning, and error paths ----
 // The tests above all go through the run() helper (single file, --mode
 // report). These cover the rest of detect.mjs's own main(): --help, no

@@ -6,12 +6,37 @@ A deterministic editorial toolkit built for Claude Code, and usable on any Skill
 
 Most anti-AI-slop tools work the same way: a big prompt tells the model what to avoid, and you trust the rewrite. clearfelt is deterministic and scored instead. `scripts/detect.mjs` parses the Markdown rule files in this repo and computes a 0 to 100 Human Score in code, so the number is reproducible by anyone who runs the script, on any file, at any time, not just something an LLM estimated while reading your text.
 
+**Runs entirely on your machine.** `scripts/detect.mjs` and everything it imports have zero dependencies, Node's standard library only, no network calls: nothing you write is ever sent anywhere. Verifiable directly from the code, not just a claim, see "Quick start" below.
+
+**Scope.** clearfelt helps your own writing sound like you, consistently, across drafts. It's not built or intended to help disguise AI-generated text as human-written in a context where that distinction actually matters, an academic submission, a byline, anywhere an authorship claim carries real weight. See `docs/ROADMAP.md`'s Feature E for the related, and rejected, "clearfelt viral" idea.
+
+## 60-second start
+
+No setup, no voice profile, no config file, no `.clearfelt/` directory. Just run it against any file:
+
+```bash
+node scripts/detect.mjs --mode report yourfile.md
+```
+
+Real output, from a fresh file in an empty directory, nothing configured first:
+
+```json
+{
+  "target": "yourfile.md",
+  "score": 22,
+  "leadDriver": "Rule-hit deduction (capped from 67) (-65 of the score)",
+  ...
+}
+```
+
+Everything past this point, voice profiles, domain context, personal calibration, constraint sets, is optional depth you add later with `/clearfelt setup` when you want it, never a prerequisite to get a first real score.
+
 ## Major features
 
 - **Deterministic Human Score.** `scripts/detect.mjs` computes the score in code, reproducible by anyone, not estimated by an LLM.
 - **Sourced rule dictionary.** Every rule cites real research ([docs/SOURCES.md](docs/SOURCES.md)) or named prior art, nothing asserted without a disclosed origin. A handful of words carry an honestly-labeled `unresolved-*` source, a citation nobody could verify, and stay off by default rather than counting against your score; see `rules.include_unresolved` in `clearfelt.config.md`.
 - **Confirms before it writes anything.** `/clearfelt rewrite` walks you through a before/after and asks first; it never silently overwrites your file.
-- **Multi-voice for teams.** One shared voice by default, or a separate profile per writer.
+- **Multi-voice for teams, or multiple platforms for one writer.** One shared voice by default, a separate profile per writer, or (new) a shared base profile with `extends:` overrides per platform, so a writer publishing to LinkedIn and a newsletter shares 90% of one voice profile instead of maintaining two full copies.
 - **Domain-aware, no false positives on real jargon.** `.clearfelt/domain.md` exempts legitimate technical terms a generic banlist would otherwise flag.
 - **Readability, tracked separately from AI-tell scoring.** Flesch-Kincaid, Gunning Fog, and processing-fluency signals, so audience-fit and slop-detection never get conflated into one blurry number. Calibrated for US-school-grade, English-language, general-audience text; not validated for other languages or specialist audiences, set your own range in `.clearfelt/domain.md` if that doesn't fit.
 - **Everything hand-editable, no JSON.** Rules, config, voice, and domain files are all plain Markdown.
@@ -25,7 +50,7 @@ Most anti-AI-slop tools work the same way: a big prompt tells the model what to 
 - **A durable log of every write.** `/clearfelt rewrite` and `/clearfelt write` append to `.clearfelt/audit.log` on every approved write, the first record that survives past the terminal session that approved it.
 - **A code-verified preservation guarantee, not just a prompt instruction.** `scripts/check.mjs` deterministically diffs a rewrite candidate against its source: a locked span that changed, or a constraint that's missed, always blocks the write; a dropped or added number, date, proper noun, or quote surfaces as a disclosed warning by default.
 - **See exactly what's active before you run anything.** `/clearfelt explain` prints every resolved config setting and which layer set it (default, shipped, or your global override), plus voice/domain/hook state, in one place.
-- **Tested, not just trusted.** `node --test` runs a real regression suite (160+ tests) against every script, not just `scripts/detect.mjs`; `node scripts/eval.mjs` checks the score against a labeled corpus and reports the pass rate honestly, including where it currently falls short; `node scripts/lint.mjs` catches repo-consistency drift (stale config defaults, an undocumented rule source, a malformed config row) before it ships.
+- **Tested, not just trusted.** `node --test` runs a real regression suite (183 tests) against every script, not just `scripts/detect.mjs`; `node scripts/eval.mjs` checks the score against a labeled corpus and reports the pass rate honestly, including where it currently falls short; `node scripts/lint.mjs` catches repo-consistency drift (stale config defaults, an undocumented rule source, a malformed config row) before it ships.
 
 ## Quick start
 
@@ -123,6 +148,18 @@ If your team has more than one writer, set `voice.mode: multi` in `clearfelt.con
 node scripts/detect.mjs --mode report drafts/sarah-post.md --voice sarah
 ```
 
+If instead it's one writer publishing to more than one platform, `/clearfelt setup` can build a shared `general.md` plus a thin `extends: general` override per platform, so you're not maintaining two nearly-identical profiles by hand:
+
+```bash
+node scripts/detect.mjs --mode report drafts/linkedin-post.md --voice linkedin
+```
+
+If a draft deliberately repeats a phrase, a hook/CTA callback or anaphora, not AI-model filler, tell the scorer so the repeated-phrase penalty doesn't fight a real writing technique (see `docs/decisions/0022`):
+
+```bash
+node scripts/detect.mjs --mode report drafts/linkedin-post.md --exempt-repetition "when you need them least"
+```
+
 ## Customization
 
 Every file you're meant to hand-edit is plain Markdown. No JSON, no code syntax to break.
@@ -130,7 +167,7 @@ Every file you're meant to hand-edit is plain Markdown. No JSON, no code syntax 
 - **Add or remove a banned word:** open the relevant file under `rules/banned_words/`, or copy `rules/banned_words.local.example.md` to `banned_words.local.md` in the same folder for a personal-only addition that never touches the shared files.
 - **Add a banned phrase or pattern:** same idea, under `rules/antipatterns/`, with `rules/antipatterns.local.example.md` as the personal-only template.
 - **Change scoring behavior:** every threshold, weight, and setting lives in one table-based file, `clearfelt.config.md`.
-- **Set your own voice:** run `/clearfelt setup`, or hand-edit `.clearfelt/voice-profile.md` directly using `templates/voice-profile.example.md` as a guide. A preference stated there always overrides the shipped banlist. For a team with multiple writers, see `voice.mode` above and `templates/voice-profile.example.md` per writer under `.clearfelt/voices/`.
+- **Set your own voice:** run `/clearfelt setup`, or hand-edit `.clearfelt/voice-profile.md` directly using `templates/voice-profile.example.md` as a guide. A preference stated there always overrides the shipped banlist. For a team with multiple writers, or one writer with multiple platforms, see `voice.mode` above and `templates/voice-profile.example.md` per writer or platform under `.clearfelt/voices/`; a platform file can start with `extends: <base-name>` to inherit a shared profile instead of duplicating it, see `templates/voice-profile.example.md`'s own top section for the merge policy.
 - **Exempt your domain's jargon:** run `/clearfelt setup`, or hand-edit `.clearfelt/domain.md` using `templates/domain.example.md` as a guide. Shared by everyone on the project, unlike a voice profile.
 - **Mark a project legally or reputationally sensitive:** set `risk_tier: sensitive` in `.clearfelt/domain.md`. See `reference/rewrite.md`'s "Risk tier" section for exactly what this changes.
 - **Save a preference across every project:** hand-edit `~/.clearfelt/settings.md` (same table format as `clearfelt.config.md`), or let `/clearfelt rewrite`/`write`'s save prompt write it for you. This file lives outside the skill's repo entirely, so it's the one place a customization survives a `git pull` or reinstall of the skill itself.
@@ -189,4 +226,4 @@ MIT. See [LICENSE](LICENSE).
 
 ## Changelog
 
-See [CHANGELOG.md](CHANGELOG.md). Current version: 0.5.0.
+See [CHANGELOG.md](CHANGELOG.md). Current version: 0.6.0.

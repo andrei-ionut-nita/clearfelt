@@ -9,6 +9,7 @@ import { resolve } from 'node:path';
 import { stripExcludedRegions, findHits } from './rules.mjs';
 import { computeScore, computeReadability } from './score.mjs';
 import { loadDomainReadabilityTarget } from './config.mjs';
+import { languageConfidence } from './language.mjs';
 
 // Collapses repeated hits of the same pattern into one row (occurrence count
 // plus every line number) and sorts by how many points that pattern actually
@@ -81,9 +82,25 @@ export function runFile(targetPath, args, rules, config, overrides) {
     return { format: 'pretty', payload: { target: targetPath, occurrences: allOccurrences } };
   }
 
+  // Computed once here (not just in report mode) so /clearfelt write and
+  // /clearfelt rewrite's iterative --mode score calls (prompts/write_loop.xml,
+  // prompts/audit_loop.xml) see this too, not only a standalone /clearfelt
+  // audit report. Only present when it actually fires, see docs/decisions/0023.
+  const langSignal = languageConfidence(scanText);
+  const languageWarning =
+    langSignal?.low
+      ? {
+          scoreReliability: 'low',
+          languageConfidence: langSignal.confidence,
+          languageWarning:
+            'This text may not be English. The Human Score\'s statistical baselines and rule dictionary are ' +
+            'English-calibrated (see docs/RESEARCH.md); this score may not mean what it looks like it means.',
+        }
+      : {};
+
   const allHits = findHits(scanText, rules, config, overrides);
   const reportedHits = args.baseline ? diffAgainstBaseline(allHits, resolve(args.baseline)) : allHits;
-  const scoring = computeScore(scanText, allHits, config);
+  const scoring = computeScore(scanText, allHits, config, args.exemptRepetition ?? []);
   const readability = computeReadability(scanText);
   const readabilityTarget = {
     target_grade_level_min: config.target_grade_level_min,
@@ -101,7 +118,7 @@ export function runFile(targetPath, args, rules, config, overrides) {
   if (args.mode === 'score') {
     // `target` is included alongside `score` so directory mode can label
     // each file's result; single-target callers already only read `.score`.
-    return { format: 'compact', payload: { target: targetPath, score: scoring.score } };
+    return { format: 'compact', payload: { target: targetPath, score: scoring.score, ...languageWarning } };
   }
 
   const byCategory = {};
@@ -122,6 +139,8 @@ export function runFile(targetPath, args, rules, config, overrides) {
       target: targetPath,
       score: scoring.score,
       leadDriver,
+      ...languageWarning,
+      ...(args.exemptRepetition?.length ? { exemptRepetition: args.exemptRepetition } : {}),
       breakdown: {
         impacts: scoring.impacts,
         deduction: scoring.deduction,

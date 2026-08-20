@@ -85,6 +85,32 @@ test('trigramRepetitionRatio: no repeated trigrams is 0; a repeated trigram is >
   assert.ok(trigramRepetitionRatio('this is a test and this is a test again') > 0);
 });
 
+// ---- trigramRepetitionRatio: exemptPhrases (ADR 0022) ----
+
+test('trigramRepetitionRatio: an exempted phrase repeated twice no longer counts toward the ratio', () => {
+  const text = 'this is a test and this is a test again';
+  const withoutExemption = trigramRepetitionRatio(text);
+  const withExemption = trigramRepetitionRatio(text, ['this is a test']);
+  assert.ok(withExemption < withoutExemption);
+  assert.equal(withExemption, 0);
+});
+
+test('trigramRepetitionRatio: exempting one repeated phrase does not suppress an unrelated repeated phrase', () => {
+  const text = 'this is a test and this is a test again, also foo bar baz repeats foo bar baz twice';
+  const partiallyExempt = trigramRepetitionRatio(text, ['this is a test']);
+  assert.ok(partiallyExempt > 0);
+});
+
+test('trigramRepetitionRatio: an exempt phrase under 3 words has no effect (no trigram to derive)', () => {
+  const text = 'this is a test and this is a test again';
+  assert.equal(trigramRepetitionRatio(text, ['this is']), trigramRepetitionRatio(text));
+});
+
+test('trigramRepetitionRatio: exemptPhrases defaults to empty and matching is case-insensitive', () => {
+  const text = 'This Is A Test and this is a test again';
+  assert.equal(trigramRepetitionRatio(text, ['THIS IS A TEST']), 0);
+});
+
 // ---- splitParagraphs / paragraphStructureScore ----
 
 test('splitParagraphs: drops markdown headers and blank paragraphs', () => {
@@ -167,6 +193,20 @@ test('computeReadability: fleschKincaidGrade is clamped at 0, never negative, fo
 
 const SAMPLE_TEXT =
   'This quarter went well for the whole team. We shipped three features and fixed a dozen bugs.\n\nNext quarter looks even better, with a bigger roadmap and more resources than before.';
+
+test('computeScore: exemptPhrases raises the score of a document that repeats a phrase on purpose (ADR 0022)', () => {
+  const repeatedText =
+    'The recruiter goes quiet exactly when you need them least.\n\nWho has shown up for you, not before it, but after the placement, when you needed them least?';
+  const withoutExemption = computeScore(repeatedText, [], {});
+  const withExemption = computeScore(repeatedText, [], {}, ['when you needed them least']);
+  assert.ok(withExemption.score >= withoutExemption.score);
+  assert.ok(withExemption.repetitionPenalty <= withoutExemption.repetitionPenalty);
+});
+
+test('computeScore: exemptPhrases defaults to an empty array, unchanged behavior when omitted', () => {
+  const result = computeScore(SAMPLE_TEXT, [], {});
+  assert.ok(Number.isFinite(result.score));
+});
 
 test('computeScore: an empty config object falls back to every hardcoded default, not NaN or a throw', () => {
   const result = computeScore(SAMPLE_TEXT, [], {});

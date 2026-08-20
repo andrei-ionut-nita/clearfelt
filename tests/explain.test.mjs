@@ -250,6 +250,185 @@ test('voice.mode: multi but no --voice given: still resolves voice-profile.md, n
   });
 });
 
+test('extends: one-hop resolution unions kept-words across base and override, inherits calibration from base when override has none', () => {
+  const clearfeltDir = join(FIXTURES, '.clearfelt');
+  const voicesDir = join(clearfeltDir, 'voices');
+  const clearfeltDirAlreadyExisted = existsSync(clearfeltDir);
+
+  withGlobalSettings(['## Voice', '', '| Setting | Default |', '|---|---|', '| voice.mode | multi |', ''], () => {
+    try {
+      mkdirSync(voicesDir, { recursive: true });
+      writeFileSync(
+        join(voicesDir, 'general.md'),
+        [
+          '# Voice profile: general',
+          '',
+          '## Words I want to keep using',
+          '',
+          '- honestly',
+          '- look',
+          '',
+          '## Personal calibration (computed)',
+          '',
+          '- baseline_mattr: 0.5',
+          '- baseline_burstiness_cv: 0.6',
+          '- baseline_paragraph_cv: 0.7',
+          '- sample_word_count: 4000',
+          '',
+        ].join('\n'),
+      );
+      writeFileSync(
+        join(voicesDir, 'linkedin.md'),
+        ['extends: general', '', '# Voice profile: linkedin', '', '## Words I want to keep using', '', '- friction', ''].join(
+          '\n',
+        ),
+      );
+
+      const result = run(['--voice', 'linkedin']);
+      assert.equal(result.voice.extends, 'general');
+      assert.match(result.voice.basePath, /voices[/\\]general\.md$/);
+      // Union, not override: linkedin's own word plus both of general's.
+      assert.equal(result.voice.keptWordsCount, 3);
+      assert.equal(result.voice.keptWordsFromOverride, 1);
+      assert.equal(result.voice.keptWordsFromBase, 2);
+      // No calibration section in linkedin.md itself: inherits general's.
+      assert.deepEqual(result.voice.personalCalibration, {
+        vocabulary_diversity_baseline: 0.5,
+        burstiness_baseline: 0.6,
+        paragraph_variety_baseline: 0.7,
+      });
+      assert.match(result.voice.personalCalibrationSource, /general\.md \(inherited via extends: general\)/);
+    } finally {
+      if (existsSync(voicesDir)) rmSync(voicesDir, { recursive: true, force: true });
+      if (!clearfeltDirAlreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+    }
+  });
+});
+
+test('extends: override with its own calibration wins outright, does not blend with base', () => {
+  const clearfeltDir = join(FIXTURES, '.clearfelt');
+  const voicesDir = join(clearfeltDir, 'voices');
+  const clearfeltDirAlreadyExisted = existsSync(clearfeltDir);
+
+  withGlobalSettings(['## Voice', '', '| Setting | Default |', '|---|---|', '| voice.mode | multi |', ''], () => {
+    try {
+      mkdirSync(voicesDir, { recursive: true });
+      writeFileSync(
+        join(voicesDir, 'general.md'),
+        [
+          '# Voice profile: general',
+          '',
+          '## Personal calibration (computed)',
+          '',
+          '- baseline_mattr: 0.5',
+          '- baseline_burstiness_cv: 0.6',
+          '- baseline_paragraph_cv: 0.7',
+          '- sample_word_count: 4000',
+          '',
+        ].join('\n'),
+      );
+      writeFileSync(
+        join(voicesDir, 'x.md'),
+        [
+          'extends: general',
+          '',
+          '# Voice profile: x',
+          '',
+          '## Personal calibration (computed)',
+          '',
+          '- baseline_mattr: 0.9',
+          '- baseline_burstiness_cv: 0.95',
+          '- baseline_paragraph_cv: 0.4',
+          '- sample_word_count: 1200',
+          '',
+        ].join('\n'),
+      );
+
+      const result = run(['--voice', 'x']);
+      assert.deepEqual(result.voice.personalCalibration, {
+        vocabulary_diversity_baseline: 0.9,
+        burstiness_baseline: 0.95,
+        paragraph_variety_baseline: 0.4,
+      });
+      assert.match(result.voice.personalCalibrationSource, /voices[/\\]x\.md$/);
+    } finally {
+      if (existsSync(voicesDir)) rmSync(voicesDir, { recursive: true, force: true });
+      if (!clearfeltDirAlreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+    }
+  });
+});
+
+test('extends: pointing at a file that does not exist errors plainly instead of silently resolving', () => {
+  const clearfeltDir = join(FIXTURES, '.clearfelt');
+  const voicesDir = join(clearfeltDir, 'voices');
+  const clearfeltDirAlreadyExisted = existsSync(clearfeltDir);
+
+  withGlobalSettings(['## Voice', '', '| Setting | Default |', '|---|---|', '| voice.mode | multi |', ''], () => {
+    try {
+      mkdirSync(voicesDir, { recursive: true });
+      writeFileSync(join(voicesDir, 'linkedin.md'), ['extends: nonexistent', '', '# Voice profile: linkedin', ''].join('\n'));
+
+      assert.throws(() => run(['--voice', 'linkedin']));
+    } finally {
+      if (existsSync(voicesDir)) rmSync(voicesDir, { recursive: true, force: true });
+      if (!clearfeltDirAlreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+    }
+  });
+});
+
+test('extends: a two-hop chain (base itself declares extends:) is rejected, not silently walked', () => {
+  const clearfeltDir = join(FIXTURES, '.clearfelt');
+  const voicesDir = join(clearfeltDir, 'voices');
+  const clearfeltDirAlreadyExisted = existsSync(clearfeltDir);
+
+  withGlobalSettings(['## Voice', '', '| Setting | Default |', '|---|---|', '| voice.mode | multi |', ''], () => {
+    try {
+      mkdirSync(voicesDir, { recursive: true });
+      writeFileSync(join(voicesDir, 'root.md'), ['# Voice profile: root', ''].join('\n'));
+      writeFileSync(join(voicesDir, 'middle.md'), ['extends: root', '', '# Voice profile: middle', ''].join('\n'));
+      writeFileSync(join(voicesDir, 'leaf.md'), ['extends: middle', '', '# Voice profile: leaf', ''].join('\n'));
+
+      let stderr = '';
+      try {
+        run(['--voice', 'leaf']);
+        assert.fail('expected explain.mjs to exit non-zero on a two-hop extends: chain');
+      } catch (err) {
+        stderr = String(err.stderr || err.message || '');
+      }
+      assert.match(stderr, /[Cc]hained inheritance is not supported/);
+    } finally {
+      if (existsSync(voicesDir)) rmSync(voicesDir, { recursive: true, force: true });
+      if (!clearfeltDirAlreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+    }
+  });
+});
+
+test('no extends: line at all behaves exactly as before (zero migration for existing multi-voice users)', () => {
+  const clearfeltDir = join(FIXTURES, '.clearfelt');
+  const voicesDir = join(clearfeltDir, 'voices');
+  const clearfeltDirAlreadyExisted = existsSync(clearfeltDir);
+
+  withGlobalSettings(['## Voice', '', '| Setting | Default |', '|---|---|', '| voice.mode | multi |', ''], () => {
+    try {
+      mkdirSync(voicesDir, { recursive: true });
+      writeFileSync(
+        join(voicesDir, 'sarah.md'),
+        ['# Voice profile: sarah', '', '## Words I want to keep using', '', '- honestly', ''].join('\n'),
+      );
+
+      const result = run(['--voice', 'sarah']);
+      assert.equal(result.voice.extends, null);
+      assert.equal(result.voice.basePath, null);
+      assert.equal(result.voice.keptWordsFromBase, null);
+      assert.equal(result.voice.keptWordsFromOverride, null);
+      assert.equal(result.voice.keptWordsCount, 1);
+    } finally {
+      if (existsSync(voicesDir)) rmSync(voicesDir, { recursive: true, force: true });
+      if (!clearfeltDirAlreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+    }
+  });
+});
+
 test('.clearfelt/domain.md with only the "## Domain" heading present: every other field falls back to its default (field() line-absent branch, not just the "(unset)" sentinel)', () => {
   acquireLock();
   const clearfeltDir = join(FIXTURES, '.clearfelt');

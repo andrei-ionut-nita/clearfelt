@@ -154,14 +154,65 @@ export function extractBulletSection(text, heading) {
   return overrides;
 }
 
+export function voiceProfilePath(targetDir, config, voiceName) {
+  return config['voice.mode'] === 'multi' && voiceName
+    ? join(targetDir, '.clearfelt', 'voices', `${voiceName}.md`)
+    : join(targetDir, '.clearfelt', 'voice-profile.md');
+}
+
+// Reads a voice file's own extends: directive, if any (ADR 0021). Only
+// recognized on the file's first non-blank line, "a one-line directive at
+// the top of the file": a stray "extends:" mentioned later, inside a
+// non-negotiable describing the word itself, say, can never be mistaken for
+// the real directive.
+function readExtendsDirective(text) {
+  const firstLine = text.split('\n').find((l) => l.trim() !== '');
+  if (!firstLine) return null;
+  const m = firstLine.match(/^extends:\s*(\S+)\s*$/);
+  return m ? m[1] : null;
+}
+
+// Resolves a voice file plus, if it declares extends:, its one allowed base
+// file. One hop only, by design (ADR 0021): every real case in hand (a
+// platform profile extending a shared base) is one hop, and walking a longer
+// chain is speculative generality this project doesn't build ahead of an
+// actual second-hop case. A base file that itself declares extends: is
+// rejected outright rather than silently walked further.
+export function resolveVoiceChain(targetDir, config, voiceName) {
+  const overridePath = voiceProfilePath(targetDir, config, voiceName);
+  if (!existsSync(overridePath)) {
+    return { overridePath, overrideText: null, baseName: null, basePath: null, baseText: null };
+  }
+  const overrideText = readFileSync(overridePath, 'utf8');
+  const baseName = readExtendsDirective(overrideText);
+  if (!baseName) {
+    return { overridePath, overrideText, baseName: null, basePath: null, baseText: null };
+  }
+  const basePath = join(targetDir, '.clearfelt', 'voices', `${baseName}.md`);
+  if (!existsSync(basePath)) {
+    throw new Error(`${overridePath} declares "extends: ${baseName}", but ${basePath} does not exist.`);
+  }
+  const baseText = readFileSync(basePath, 'utf8');
+  if (readExtendsDirective(baseText)) {
+    throw new Error(
+      `${basePath} (the base ${overridePath} extends) itself declares an extends: directive. ` +
+        `Chained inheritance is not supported, only one hop: a base file must be terminal.`,
+    );
+  }
+  return { overridePath, overrideText, baseName, basePath, baseText };
+}
+
+// List-section merge policy (ADR 0021): union, never override. A platform
+// file only ever adds to what the base already says is true everywhere; it
+// can't silently drop a base entry just by not repeating it.
 export function loadVoiceProfileOverrides(targetDir, config, voiceName) {
-  const profilePath =
-    config['voice.mode'] === 'multi' && voiceName
-      ? join(targetDir, '.clearfelt', 'voices', `${voiceName}.md`)
-      : join(targetDir, '.clearfelt', 'voice-profile.md');
-  if (!existsSync(profilePath)) return new Set();
-  const text = readFileSync(profilePath, 'utf8');
-  return extractBulletSection(text, '## Words I want to keep using');
+  const { overrideText, baseText } = resolveVoiceChain(targetDir, config, voiceName);
+  if (!overrideText) return new Set();
+  const overrides = extractBulletSection(overrideText, '## Words I want to keep using');
+  if (baseText) {
+    for (const word of extractBulletSection(baseText, '## Words I want to keep using')) overrides.add(word);
+  }
+  return overrides;
 }
 
 // ---- domain profile precedence ----
@@ -197,13 +248,7 @@ export function loadDomainReadabilityTarget(targetDir) {
 // additive: a project with no calibration section returns {}, and every
 // caller merges this on top of loadConfig()'s result, so the generic
 // defaults still apply unchanged when it's absent.
-export function loadVoiceProfileCalibration(targetDir, config, voiceName) {
-  const profilePath =
-    config['voice.mode'] === 'multi' && voiceName
-      ? join(targetDir, '.clearfelt', 'voices', `${voiceName}.md`)
-      : join(targetDir, '.clearfelt', 'voice-profile.md');
-  if (!existsSync(profilePath)) return {};
-  const text = readFileSync(profilePath, 'utf8');
+export function parseCalibrationSection(text) {
   const sectionStart = text.indexOf('## Personal calibration (computed)');
   if (sectionStart === -1) return {};
   const section = text.slice(sectionStart).split(/\n##\s+/)[0];
@@ -216,4 +261,20 @@ export function loadVoiceProfileCalibration(targetDir, config, voiceName) {
   if (burstinessMatch) calibration.burstiness_baseline = Number(burstinessMatch[1]);
   if (paragraphMatch) calibration.paragraph_variety_baseline = Number(paragraphMatch[1]);
   return calibration;
+}
+
+// Calibration merge policy (ADR 0021): inherits the base's numbers unless
+// the override file has its own complete, non-empty calibration section, in
+// which case the override wins outright, all fields together, never a
+// partial mix with the base's. Most platform profiles will never set this
+// section at all, since it describes the writer's underlying rhythm, not a
+// platform trait, but a writer whose voice is genuinely, measurably
+// different on one surface isn't blocked from saying so.
+export function loadVoiceProfileCalibration(targetDir, config, voiceName) {
+  const { overrideText, baseText } = resolveVoiceChain(targetDir, config, voiceName);
+  if (!overrideText) return {};
+  const ownCalibration = parseCalibrationSection(overrideText);
+  if (Object.keys(ownCalibration).length > 0) return ownCalibration;
+  if (baseText) return parseCalibrationSection(baseText);
+  return {};
 }

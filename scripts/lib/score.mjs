@@ -94,14 +94,40 @@ export function movingAverageTtr(text, windowSize = 50) {
   return sum / windowCount;
 }
 
-export function trigramRepetitionRatio(text) {
+// A repeated trigram is usually filler (the AI-slop signal this exists to
+// catch), but not always: "No message at 90 days. No check-in during
+// onboarding." repeats a device (anaphora) on purpose, and a hook/CTA
+// callback ("goes quiet exactly when you need them least" / "shown up for
+// you... not before it") deliberately echoes a phrase to close a loop.
+// Neither is detectable from the text alone without risking exactly the
+// false-confidence problem docs/ROADMAP.md's Feature C already declined to
+// ship (a statistical proxy can't tell "same phrase, filler" from "same
+// phrase, device"). So this doesn't try to detect intent; a caller states it
+// instead, the same "human declares, tool doesn't guess" shape as
+// domain.md's jargon exemption list. exemptPhrases are turned into their own
+// trigrams and subtracted from the repeated tally, not the total: an
+// exempted phrase still counts toward "how much text this is," it just
+// doesn't count against the writer for repeating it on purpose.
+export function exemptTrigramSet(exemptPhrases) {
+  const exempt = new Set();
+  for (const phrase of exemptPhrases) {
+    const words = String(phrase).toLowerCase().match(/\b[a-z']+\b/g) || [];
+    for (let i = 0; i <= words.length - 3; i++) exempt.add(words.slice(i, i + 3).join(' '));
+  }
+  return exempt;
+}
+
+export function trigramRepetitionRatio(text, exemptPhrases = []) {
   const words = text.toLowerCase().match(/\b[a-z']+\b/g) || [];
   if (words.length < 3) return 0;
   const trigrams = [];
   for (let i = 0; i <= words.length - 3; i++) trigrams.push(words.slice(i, i + 3).join(' '));
+  const exempt = exemptTrigramSet(exemptPhrases);
   const counts = new Map();
   for (const t of trigrams) counts.set(t, (counts.get(t) || 0) + 1);
-  const repeated = [...counts.values()].filter((c) => c > 1).reduce((a, b) => a + b, 0);
+  const repeated = [...counts.entries()]
+    .filter(([t, c]) => c > 1 && !exempt.has(t))
+    .reduce((a, [, c]) => a + c, 0);
   // trigrams.length can never be 0 here: the words.length < 3 guard above
   // already ensures at least one trigram exists by the time this runs.
   return repeated / trigrams.length;
@@ -181,7 +207,7 @@ export function computeReadability(text) {
 
 // ---- scoring ----
 
-export function computeScore(text, hits, config) {
+export function computeScore(text, hits, config, exemptPhrases = []) {
   const categoryWeight = (category) => config[category] ?? 1.0;
   let deduction = 0;
   for (const hit of hits) deduction += hit.severity * categoryWeight(hit.category);
@@ -213,7 +239,7 @@ export function computeScore(text, hits, config) {
   const mattr = movingAverageTtr(text, 50);
   const vocabAdjustment = (mattr - (config.vocabulary_diversity_baseline ?? 0.8688)) * (config.vocabulary_diversity_weight ?? 140);
 
-  const repetition = trigramRepetitionRatio(text);
+  const repetition = trigramRepetitionRatio(text, exemptPhrases);
   const repetitionPenalty = repetition * (config.repetition_weight ?? 27) * 10;
 
   const { sentenceCount } = burstinessScore(text);

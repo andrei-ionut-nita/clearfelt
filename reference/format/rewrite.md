@@ -51,6 +51,11 @@ Same verdict-first discipline as audit: the reader should know the outcome befor
 ## What changed, and why
 
 - <span changed> to <what it became>. Driver: <pattern/category, or the impacts label>.
+
+How should I write this?
+- Overwrite <path>
+- Write to a new file (<stem>.rewritten<ext>)
+- Other
 ```
 
 **"What moved the score" rules.** List every factor that changed between the two runs, sorted by size of movement, same sign convention as audit's full-math table (positive = added, negative = subtracted). Omit a factor entirely if it was 0 in both runs, don't show a row of zeros. Round values to the nearest whole point, same reasoning as audit: this formula doesn't support decimal precision in a human-facing table.
@@ -71,7 +76,10 @@ Only shown when `scripts/check.mjs`'s verdict for this run was `warn`. A `fail` 
 - <type: number/date/properNoun/quote> `<value>` present in the source but missing from the rewrite. Context: `<snippet>`.
 - <type> `<value>` present in the rewrite but not the source. Context: `<snippet>`.
 
-Apply this to `<path>`? (waiting for explicit yes/no)
+How should I write this?
+- Overwrite <path>
+- Write to a new file (<stem>.rewritten<ext>)
+- Other
 ```
 
 These are automated, regex-based flags on facts the rewrite may have dropped or added, not confirmed errors. Say that plainly before the list, then glance-check the spans yourself before approving.
@@ -124,5 +132,8 @@ Swapped repeated buzzwords for plainer phrasing, no structural changes.
 - "leverage our platform" to "use our platform". Driver: banned_words / leverage.
 - "seamlessly scale" to "scale, without the usual setup friction". Driver: frictionless_claims.
 
-Apply this to draft.md? (waiting for explicit yes/no)
+How should I write this?
+- Overwrite draft.md
+- Write to a new file (draft.rewritten.md)
+- Other
 ```
