@@ -11,15 +11,24 @@ import { withGlobalSettings, acquireLock, releaseLock } from './global-settings.
 
 test('withGlobalSettings writes the given content during fn and restores exact prior absence afterward', () => {
   const homeSettingsPath = join(homedir(), '.clearfelt', 'settings.md');
-  const existedBefore = existsSync(homeSettingsPath);
 
+  // Not read outside the lock: an existsSync() here would race against any
+  // other test file's own withGlobalSettings call mutating this same real
+  // file under its own lock acquisition, and could observe a transient
+  // in-flight state instead of the true prior one (the exact intermittent
+  // CI failure this test used to have). fileAlreadyExisted is the value
+  // withGlobalSettings itself observed atomically under the lock, so
+  // comparing against that instead is race-free by construction.
   let sawContentDuring = null;
-  withGlobalSettings(['## Scoring', '', '| Setting | Default |', '|---|---|', '| max_iterations | 7 |', ''], () => {
-    sawContentDuring = existsSync(homeSettingsPath);
-  });
+  const fileAlreadyExisted = withGlobalSettings(
+    ['## Scoring', '', '| Setting | Default |', '|---|---|', '| max_iterations | 7 |', ''],
+    () => {
+      sawContentDuring = existsSync(homeSettingsPath);
+    },
+  );
 
   assert.equal(sawContentDuring, true, 'the file must exist while fn runs');
-  assert.equal(existsSync(homeSettingsPath), existedBefore, 'must restore to the exact prior existence state');
+  assert.equal(existsSync(homeSettingsPath), fileAlreadyExisted, 'must restore to the exact prior existence state');
 });
 
 test('a second acquireLock while the first is held times out instead of hanging or double-acquiring', () => {

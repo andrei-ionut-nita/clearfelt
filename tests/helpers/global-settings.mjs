@@ -69,7 +69,13 @@ export function releaseLock(lockPath = LOCK_PATH) {
 // lines, joined with '\n'), then restores the file to exactly whatever state
 // it was in before this call, all under an exclusive cross-process lock so
 // no other test file's own call to this helper can observe or clobber the
-// state in between.
+// state in between. Returns `fileAlreadyExisted`, the existence this call
+// itself observed under the lock, so a caller that wants to assert "did this
+// restore correctly" has a race-free value to compare against instead of
+// taking its own existsSync() reading outside the lock, which can observe
+// another test file's in-flight, differently-locked mutation and get the
+// wrong answer (found via an intermittent CI failure on exactly this check,
+// see tests/helpers/global-settings.test.mjs).
 export function withGlobalSettings(contentLines, fn, { lockTimeoutMs } = {}) {
   acquireLock(lockTimeoutMs);
   try {
@@ -88,6 +94,7 @@ export function withGlobalSettings(contentLines, fn, { lockTimeoutMs } = {}) {
       else if (existsSync(settingsPath)) rmSync(settingsPath);
       if (!dirAlreadyExisted && existsSync(settingsDir)) rmSync(settingsDir, { recursive: true, force: true });
     }
+    return fileAlreadyExisted;
   } finally {
     releaseLock();
   }

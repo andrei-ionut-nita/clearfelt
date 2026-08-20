@@ -210,6 +210,14 @@ test('a config key with no shipped clearfelt.config.md row at all falls back to 
   // test in tests/detect.test.mjs already uses for the global-override
   // layer; this is the equivalent for the shipped layer. Narrow window,
   // synchronous, full content restored in finally even on assertion failure.
+  // clearfelt.config.md (the shipped config, not a per-test fixture) is read
+  // by every test file's subprocess calls to loadConfig(), so mutating it
+  // needs the same cross-file lock every other shared-mutable-state mutation
+  // in this suite uses, or a concurrent file's subprocess spawn during this
+  // window would read the temporarily-missing row too. Missed on first
+  // write (found via an intermittent CI failure elsewhere in this same
+  // file, not this test directly, but the same class of gap).
+  acquireLock();
   const originalContent = readFileSync(SHIPPED_CONFIG, 'utf8');
   assert.match(originalContent, /\|\s*deduction_cap\s*\|/, 'expected clearfelt.config.md to actually ship a deduction_cap row');
 
@@ -226,6 +234,7 @@ test('a config key with no shipped clearfelt.config.md row at all falls back to 
     assert.equal(result.config.deduction_cap.value, 65, 'CONFIG_DEFAULTS.deduction_cap, not an arbitrary fallback');
   } finally {
     writeFileSync(SHIPPED_CONFIG, originalContent);
+    releaseLock();
   }
 });
 
@@ -235,10 +244,21 @@ test('-h (short flag) behaves identically to --help', () => {
 });
 
 test('--voice given while voice.mode is single (default, no multi override): resolves the same voice-profile.md path as no --voice at all, mode stays "single"', () => {
-  const withoutVoiceFlag = run();
-  const withVoiceFlag = run(['--voice', 'someone']);
-  assert.equal(withVoiceFlag.voice.mode, 'single');
-  assert.equal(withVoiceFlag.voice.profilePath, withoutVoiceFlag.voice.profilePath);
+  // Depends on ~/.clearfelt/settings.md being in its true default state
+  // (voice.mode unset), same race as every other test in this file that
+  // asserts default behavior: acquireLock() prevents another test file's
+  // concurrent withGlobalSettings call from setting voice.mode: multi in the
+  // real file while this subprocess call is reading it. Found via an
+  // intermittent CI failure on exactly this assertion.
+  acquireLock();
+  try {
+    const withoutVoiceFlag = run();
+    const withVoiceFlag = run(['--voice', 'someone']);
+    assert.equal(withVoiceFlag.voice.mode, 'single');
+    assert.equal(withVoiceFlag.voice.profilePath, withoutVoiceFlag.voice.profilePath);
+  } finally {
+    releaseLock();
+  }
 });
 
 test('voice.mode: multi but no --voice given: still resolves voice-profile.md, not a voices/ path (voiceName absent short-circuits the multi branch)', () => {
