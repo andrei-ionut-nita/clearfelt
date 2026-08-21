@@ -17,7 +17,7 @@
 //
 // Known gap, not fixed here (same one docs/DEVELOP.md and detect.test.mjs's
 // own header comment already disclose): this still touches the real
-// ~/.clearfelt-writing/settings.md file. A CLEARFELT_HOME env override in
+// ~/.clearfelt-writing/settings.md file. A CLEARFELT_WRITING_HOME env override in
 // scripts/lib/config.mjs would remove the need for a lock entirely, by
 // letting each test process point at its own private settings file instead
 // of sharing one. This helper only makes the current, real-file approach

@@ -9,7 +9,7 @@
 // via `os.homedir()` with no override hook, so the config-weight regression
 // test below (via helpers/global-settings.mjs's withGlobalSettings) still
 // temporarily writes a real file in the machine's home directory. A future
-// refactor could add a CLEARFELT_HOME env override to avoid that. What IS
+// refactor could add a CLEARFELT_WRITING_HOME env override to avoid that. What IS
 // fixed here: this used to be its own copy-pasted backup/restore block,
 // unsafe under node --test's default cross-file concurrency since
 // check.test.mjs touches the exact same real file; both now go through one
