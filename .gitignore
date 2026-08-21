@@ -2,8 +2,8 @@
 rules/antipatterns.local.md
 rules/banned_words.local.md
 
-# Per-project voice profile and other clearfelt state
-.clearfelt/
+# Per-project voice profile and other clearfelt-writing state
+.clearfelt-writing/
 
 # Opt-in saved artifacts (audit reports, eval trend data), never a default write target
 reports/

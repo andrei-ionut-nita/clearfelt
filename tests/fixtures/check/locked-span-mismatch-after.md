@@ -1,7 +1,7 @@
 Quarterly summary follows.
 
-<!-- clearfelt-lock -->
+<!-- clearfelt-writing-lock -->
 This clause was reviewed by our legal team and cannot be changed.
-<!-- /clearfelt-lock -->
+<!-- /clearfelt-writing-lock -->
 
 Closing remarks.

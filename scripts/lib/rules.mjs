@@ -80,7 +80,7 @@ export function mergeLocal(base, localFile) {
 // citation couldn't be verified, not that one exists: shipping it as a
 // scored default anyway would contradict "every rule cites... nothing
 // asserted without a disclosed origin" (README.md). Off by default, per
-// rules.include_unresolved in clearfelt.config.md; a project that wants
+// rules.include_unresolved in clearfelt-writing.config.md; a project that wants
 // these anyway (or has independently verified the citation) can opt in.
 // Applies uniformly to shared and .local.md entries alike: an unresolved
 // citation is the same disclosed gap regardless of which file it's in.
@@ -210,17 +210,17 @@ export function findHits(text, rules, config, overrides, { includeSuppressed = f
 
   // Tiering exists to keep the SCORE honest (a single legitimate "robust"
   // shouldn't tank a document). --mode scan (includeSuppressed) bypasses it
-  // deliberately: /clearfelt rewrite's balanced/full_rewrite/structural_rework
+  // deliberately: /clearfelt-writing rewrite's balanced/full_rewrite/structural_rework
   // tiers need to see every occurrence, not just the ones that survived
   // tier-suppression, or they can never touch the words tiering was hiding
-  // from the score. .clearfelt/domain.md's exemption list is still the right
+  // from the score. .clearfelt-writing/domain.md's exemption list is still the right
   // tool for genuinely legitimate jargon; tiering was never meant to protect
   // rewrite's editing scope, only the scored number.
   if (includeSuppressed) {
     return perRule.flatMap(({ rule, occurrences }) => occurrences.map((occ) => toHit(rule, occ)));
   }
 
-  // Tier-2's actual rule, per clearfelt.config.md: "a tier-2 word only
+  // Tier-2's actual rule, per clearfelt-writing.config.md: "a tier-2 word only
   // counts as a hit when ANOTHER flagged word appears within
   // tier2_cluster_window words of it." That's a proximity check against
   // every hit in the document (any rule, any category), not "this same

@@ -1,4 +1,4 @@
-# `/clearfelt audit` output
+# `/clearfelt-writing audit` output
 
 Shared rules live in [conventions.md](conventions.md), read that first. This file covers the two templates specific to audit: the directory summary, and the per-file breakdown.
 

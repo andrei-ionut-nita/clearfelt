@@ -1,4 +1,4 @@
-# `/clearfelt explain` output
+# `/clearfelt-writing explain` output
 
 Shared rules live in [conventions.md](conventions.md); the verdict-line rule doesn't apply here since explain reports state, it doesn't score anything.
 
@@ -8,9 +8,9 @@ Shared rules live in [conventions.md](conventions.md); the verdict-line rule doe
 | | |
 |---|---|
 | Voice mode | <single/multi> |
-| Voice profile | <path> (exists / not found, run /clearfelt setup) |
+| Voice profile | <path> (exists / not found, run /clearfelt-writing setup) |
 | Words protected by voice profile | <keptWordsCount> |
-| Domain profile | <exists / not found, run /clearfelt setup> |
+| Domain profile | <exists / not found, run /clearfelt-writing setup> |
 | Risk tier | <riskTier> |
 | Domain mode | <mode, or "not set"> |
 | Preferred intensity | <preferredIntensity, or "not set, will ask"> |
@@ -24,7 +24,7 @@ Every row from `scripts/explain.mjs`'s `config` object, unfiltered, sorted by se
 
 | Setting | Value | Source |
 |---|---|---|
-| <key> | <value> | <default / shipped (clearfelt.config.md) / global (~/.clearfelt/settings.md)> |
+| <key> | <value> | <default / shipped (clearfelt-writing.config.md) / global (~/.clearfelt-writing/settings.md)> |
 
 ## Hook
 

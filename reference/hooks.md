@@ -1,10 +1,10 @@
-# $clearfelt hooks
+# $clearfelt-writing hooks
 
 Manages the auto-audit hook for the current project. Adapted from the same pattern as the `impeccable` skill's hook admin.
 
 The hook runs `scripts/detect.mjs` on direct edits to text files (`.md`, `.mdx`, `.txt`) via a Claude Code PostToolUse hook on Edit/Write/MultiEdit, and prints a short score line after the edit rather than blocking it.
 
-State (enabled, quiet, ignored rules, ignored files) lives in `.clearfelt/hook-state.md`, a gitignored per-project file, kept separate from the tracked `clearfelt.config.md` so toggling the hook never shows up as a diff in the shared repo. Installing the hook itself means writing a `PostToolUse` entry into the project's `.claude/settings.local.json`, which is Claude Code's own machine-local config format, not a clearfelt-authored file.
+State (enabled, quiet, ignored rules, ignored files) lives in `.clearfelt-writing/hook-state.md`, a gitignored per-project file, kept separate from the tracked `clearfelt-writing.config.md` so toggling the hook never shows up as a diff in the shared repo. Installing the hook itself means writing a `PostToolUse` entry into the project's `.claude/settings.local.json`, which is Claude Code's own machine-local config format, not a clearfelt-writing-authored file.
 
 ## Routing
 

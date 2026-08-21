@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * clearfelt calibration: computes personal statistical baselines (vocabulary
+ * clearfelt-writing calibration: computes personal statistical baselines (vocabulary
  * diversity, sentence-rhythm burstiness, paragraph-length variety) from a
- * writing sample or a directory of past writing, for /clearfelt setup to
- * store in .clearfelt/voice-profile.md's "Personal calibration (computed)"
+ * writing sample or a directory of past writing, for /clearfelt-writing setup to
+ * store in .clearfelt-writing/voice-profile.md's "Personal calibration (computed)"
  * section. Reuses the exact same scoring functions detect.mjs's real audit
  * path calls (movingAverageTtr, burstinessScore, paragraphStructureScore),
  * not a parallel implementation, so a calibrated baseline and a later audit
@@ -29,19 +29,19 @@ function assertWithinCwd(targetPath, label) {
   if (!withinCwd) {
     console.error(
       `Error: ${label} "${targetPath}" resolves outside the current project (${cwdReal}). ` +
-        'clearfelt only reads files inside the project it was invoked from.',
+        'clearfelt-writing only reads files inside the project it was invoked from.',
     );
     process.exit(1);
   }
   return targetReal;
 }
 
-const USAGE = `clearfelt calibration: computes personal statistical baselines from a writing sample or directory.
+const USAGE = `clearfelt-writing calibration: computes personal statistical baselines from a writing sample or directory.
 
 Usage:
   node scripts/calibrate.mjs <path|directory>
 
-<path|directory> must resolve inside the current project directory (process.cwd()); clearfelt refuses to read a path outside it.`;
+<path|directory> must resolve inside the current project directory (process.cwd()); clearfelt-writing refuses to read a path outside it.`;
 
 const SCANNABLE_EXTENSIONS = new Set(['.md', '.txt', '.mdx']);
 

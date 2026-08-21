@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://clearfelt/schemas/eval-manifest.schema.json",
-  "title": "clearfelt eval manifest",
+  "$id": "https://clearfelt-writing/schemas/eval-manifest.schema.json",
+  "title": "clearfelt-writing eval manifest",
   "description": "Documents tests/fixtures/eval/manifest.json's shape, read by scripts/eval.mjs. Not a validation engine this repo runs against the file (see CLAUDE.md's dependency-free rule; scripts/lint.mjs does a small hand-written check instead, not generic JSON-Schema interpretation). Primary purpose: editor autocomplete/validation via the manifest's own \"$schema\" field, and a single documented source of truth for the shape instead of only prose.",
   "type": "object",
   "required": ["note", "fixtures"],

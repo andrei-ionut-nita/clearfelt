@@ -1,5 +1,5 @@
 // Shared helper for any test that needs to temporarily set
-// ~/.clearfelt/settings.md (the highest-precedence config layer, see
+// ~/.clearfelt-writing/settings.md (the highest-precedence config layer, see
 // scripts/lib/config.mjs's configLayers()) and restore it afterward.
 //
 // Found while adding new tests: detect.test.mjs and check.test.mjs both
@@ -17,7 +17,7 @@
 //
 // Known gap, not fixed here (same one docs/DEVELOP.md and detect.test.mjs's
 // own header comment already disclose): this still touches the real
-// ~/.clearfelt/settings.md file. A CLEARFELT_HOME env override in
+// ~/.clearfelt-writing/settings.md file. A CLEARFELT_HOME env override in
 // scripts/lib/config.mjs would remove the need for a lock entirely, by
 // letting each test process point at its own private settings file instead
 // of sharing one. This helper only makes the current, real-file approach
@@ -27,7 +27,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node
 import { join } from 'node:path';
 import { homedir, tmpdir } from 'node:os';
 
-const LOCK_PATH = join(tmpdir(), 'clearfelt-tests-global-settings.lock');
+const LOCK_PATH = join(tmpdir(), 'clearfelt-writing-tests-global-settings.lock');
 const LOCK_RETRY_MS = 20;
 const LOCK_TIMEOUT_MS = 10_000;
 
@@ -65,7 +65,7 @@ export function releaseLock(lockPath = LOCK_PATH) {
   rmSync(lockPath, { recursive: true, force: true });
 }
 
-// Runs fn() with ~/.clearfelt/settings.md set to `contentLines` (an array of
+// Runs fn() with ~/.clearfelt-writing/settings.md set to `contentLines` (an array of
 // lines, joined with '\n'), then restores the file to exactly whatever state
 // it was in before this call, all under an exclusive cross-process lock so
 // no other test file's own call to this helper can observe or clobber the
@@ -79,7 +79,7 @@ export function releaseLock(lockPath = LOCK_PATH) {
 export function withGlobalSettings(contentLines, fn, { lockTimeoutMs } = {}) {
   acquireLock(lockTimeoutMs);
   try {
-    const settingsDir = join(homedir(), '.clearfelt');
+    const settingsDir = join(homedir(), '.clearfelt-writing');
     const settingsPath = join(settingsDir, 'settings.md');
     const dirAlreadyExisted = existsSync(settingsDir);
     const fileAlreadyExisted = existsSync(settingsPath);

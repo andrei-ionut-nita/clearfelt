@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://clearfelt/schemas/check-report.schema.json",
-  "title": "clearfelt check.mjs preservation report",
+  "$id": "https://clearfelt-writing/schemas/check-report.schema.json",
+  "title": "clearfelt-writing check.mjs preservation report",
   "description": "Documents the JSON scripts/check.mjs prints on stdout (exit 0 for verdict 'pass'/'warn', exit 1 for 'fail'). Documentation and a target for scripts/lint.mjs's checkOutputShape(), not a runtime validator, same convention as schemas/detect-report.schema.json. See scripts/check.mjs's main() for the actual construction.",
   "type": "object",
   "required": ["before", "after", "lockedSpans", "fingerprint", "verdict"],

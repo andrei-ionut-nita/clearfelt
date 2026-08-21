@@ -4,7 +4,7 @@
 
 ## To record a run
 
-1. Read `reference/audit.md`'s "Qualitative signals" section fresh, the same prose a real `/clearfelt audit` or `/clearfelt rewrite` Pass 1/2 would read.
+1. Read `reference/audit.md`'s "Qualitative signals" section fresh, the same prose a real `/clearfelt-writing audit` or `/clearfelt-writing rewrite` Pass 1/2 would read.
 2. For each fixture in `../manifest.json`, read the fixture and judge all five signals, using the manifest's polarity (`true` = the fixture exhibits the human-like quality; `noSynonymCycling: true` means it does *not* cycle synonyms).
 3. Write a new file here, `run-<N>.json` (next unused number), shaped:
    ```json

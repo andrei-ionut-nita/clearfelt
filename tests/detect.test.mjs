@@ -5,7 +5,7 @@
 // actually ships. Uses only node:test/node:assert (Node's built-in test
 // runner), no new dependency, per CLAUDE.md's dependency-free rule.
 //
-// Known gap, not fixed here: `loadConfig()` reads `~/.clearfelt/settings.md`
+// Known gap, not fixed here: `loadConfig()` reads `~/.clearfelt-writing/settings.md`
 // via `os.homedir()` with no override hook, so the config-weight regression
 // test below (via helpers/global-settings.mjs's withGlobalSettings) still
 // temporarily writes a real file in the machine's home directory. A future
@@ -158,7 +158,7 @@ test('regression: category severity weights from config actually multiply the de
   // Round-9 bug: loadConfig() never parsed the "Category severity weights"
   // section, and computeScore looked up a `weight_<category>` key that was
   // never populated, so every category silently scored at 1.0 regardless of
-  // clearfelt.config.md. This reproduces that exact scenario via the
+  // clearfelt-writing.config.md. This reproduces that exact scenario via the
   // highest-precedence override file and asserts the weight actually lands.
   const baseline = run('ai-heavy-sample.md');
   const puffuryHits = baseline.hits.filter((h) => h.category === 'puffery_lexicon');
@@ -175,7 +175,7 @@ test('regression: category severity weights from config actually multiply the de
       assert.equal(
         weighted.breakdown.deduction,
         baseline.breakdown.deduction - expectedDrop,
-        'a 0.5 category weight in ~/.clearfelt/settings.md should cut that category\'s contribution in half',
+        'a 0.5 category weight in ~/.clearfelt-writing/settings.md should cut that category\'s contribution in half',
       );
     },
   );
@@ -213,27 +213,27 @@ test('leadDriver falls back to "no single factor dominates" when every impact is
   }
 });
 
-test('personal calibration in .clearfelt/voice-profile.md overrides the generic statistical baselines', () => {
+test('personal calibration in .clearfelt-writing/voice-profile.md overrides the generic statistical baselines', () => {
   // Feature: scripts/calibrate.mjs computes a writer's own MATTR/burstiness/
-  // paragraph-CV, /clearfelt setup stores it, and loadVoiceProfileCalibration
-  // reads it back to override clearfelt.config.md's generic, fixture-derived
+  // paragraph-CV, /clearfelt-writing setup stores it, and loadVoiceProfileCalibration
+  // reads it back to override clearfelt-writing.config.md's generic, fixture-derived
   // defaults for this project only. A voice profile with no calibration
   // section must be a strict no-op (covered implicitly by every other test
   // in this file, none of which create one); this test covers the override
   // actually taking effect when the section is present.
-  // tests/fixtures/.clearfelt/ is shared with tests/explain.test.mjs (both
+  // tests/fixtures/.clearfelt-writing/ is shared with tests/explain.test.mjs (both
   // files' FIXTURES resolve to the same tests/fixtures directory), and
   // node --test runs separate test files concurrently by default: lock it
-  // the same way withGlobalSettings already locks ~/.clearfelt/settings.md.
+  // the same way withGlobalSettings already locks ~/.clearfelt-writing/settings.md.
   acquireLock();
-  const clearfeltDir = join(FIXTURES, '.clearfelt');
-  const profilePath = join(clearfeltDir, 'voice-profile.md');
-  const alreadyExisted = existsSync(clearfeltDir);
+  const clearfeltWritingDir = join(FIXTURES, '.clearfelt-writing');
+  const profilePath = join(clearfeltWritingDir, 'voice-profile.md');
+  const alreadyExisted = existsSync(clearfeltWritingDir);
 
   try {
     const baseline = run('human-sample.md');
 
-    mkdirSync(clearfeltDir, { recursive: true });
+    mkdirSync(clearfeltWritingDir, { recursive: true });
     writeFileSync(
       profilePath,
       [
@@ -280,19 +280,19 @@ test('personal calibration in .clearfelt/voice-profile.md overrides the generic 
     );
   } finally {
     if (existsSync(profilePath)) rmSync(profilePath);
-    if (!alreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+    if (!alreadyExisted && existsSync(clearfeltWritingDir)) rmSync(clearfeltWritingDir, { recursive: true, force: true });
     releaseLock();
   }
 });
 
-test('voice.mode: multi with --voice <name>: .clearfelt/voices/<name>.md "Words I want to keep using" suppresses that word\'s hit', () => {
-  // Shares tests/fixtures/.clearfelt/ with the calibration test above and
+test('voice.mode: multi with --voice <name>: .clearfelt-writing/voices/<name>.md "Words I want to keep using" suppresses that word\'s hit', () => {
+  // Shares tests/fixtures/.clearfelt-writing/ with the calibration test above and
   // with tests/explain.test.mjs; withGlobalSettings's own lock covers both
   // the settings mutation and this fixture-directory mutation, so no
   // separate acquireLock/releaseLock here (that would deadlock against it).
-  const voicesDir = join(FIXTURES, '.clearfelt', 'voices');
-  const clearfeltDir = join(FIXTURES, '.clearfelt');
-  const alreadyExisted = existsSync(clearfeltDir);
+  const voicesDir = join(FIXTURES, '.clearfelt-writing', 'voices');
+  const clearfeltWritingDir = join(FIXTURES, '.clearfelt-writing');
+  const alreadyExisted = existsSync(clearfeltWritingDir);
   const profilePath = join(voicesDir, 'work.md');
 
   withGlobalSettings(['## Voice', '', '| Setting | Default |', '|---|---|', '| voice.mode | multi |', ''], () => {
@@ -313,15 +313,15 @@ test('voice.mode: multi with --voice <name>: .clearfelt/voices/<name>.md "Words 
       );
     } finally {
       if (existsSync(profilePath)) rmSync(profilePath);
-      if (!alreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+      if (!alreadyExisted && existsSync(clearfeltWritingDir)) rmSync(clearfeltWritingDir, { recursive: true, force: true });
     }
   });
 });
 
 test('extends: a word listed only in the base file is still suppressed through a platform override (union, ADR 0021)', () => {
-  const voicesDir = join(FIXTURES, '.clearfelt', 'voices');
-  const clearfeltDir = join(FIXTURES, '.clearfelt');
-  const alreadyExisted = existsSync(clearfeltDir);
+  const voicesDir = join(FIXTURES, '.clearfelt-writing', 'voices');
+  const clearfeltWritingDir = join(FIXTURES, '.clearfelt-writing');
+  const alreadyExisted = existsSync(clearfeltWritingDir);
   const basePath = join(voicesDir, 'general.md');
   const overridePath = join(voicesDir, 'linkedin.md');
 
@@ -346,7 +346,7 @@ test('extends: a word listed only in the base file is still suppressed through a
     } finally {
       if (existsSync(basePath)) rmSync(basePath);
       if (existsSync(overridePath)) rmSync(overridePath);
-      if (!alreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+      if (!alreadyExisted && existsSync(clearfeltWritingDir)) rmSync(clearfeltWritingDir, { recursive: true, force: true });
     }
   });
 });
@@ -450,7 +450,7 @@ test('a path that does not exist: clear error, exit 1', () => {
 });
 
 test('a path outside the project directory is refused, even when it exists', () => {
-  const outsideFile = join(tmpdir(), 'clearfelt-detect-outside-test.md');
+  const outsideFile = join(tmpdir(), 'clearfelt-writing-detect-outside-test.md');
   writeFileSync(outsideFile, 'Some text.');
   try {
     const { status, stderr } = spawnSync(process.execPath, [DETECT, '--mode', 'report', outsideFile], { cwd: FIXTURES, encoding: 'utf8' });
@@ -548,16 +548,16 @@ test('--baseline pointing at a nonexistent snapshot file is a no-op (all hits st
   assert.equal(result.hits.length, full.hits.length);
 });
 
-test('.clearfelt/domain.md target_grade_level_min/max overrides clearfelt.config.md\'s shipped 6-12 default for readability.withinTargetRange', () => {
+test('.clearfelt-writing/domain.md target_grade_level_min/max overrides clearfelt-writing.config.md\'s shipped 6-12 default for readability.withinTargetRange', () => {
   acquireLock();
-  const clearfeltDir = join(FIXTURES, '.clearfelt');
-  const domainPath = join(clearfeltDir, 'domain.md');
-  const alreadyExisted = existsSync(clearfeltDir);
+  const clearfeltWritingDir = join(FIXTURES, '.clearfelt-writing');
+  const domainPath = join(clearfeltWritingDir, 'domain.md');
+  const alreadyExisted = existsSync(clearfeltWritingDir);
 
   try {
     const withoutDomain = run('human-sample.md');
 
-    mkdirSync(clearfeltDir, { recursive: true });
+    mkdirSync(clearfeltWritingDir, { recursive: true });
     // A deliberately extreme, narrow range that the fixture's real grade
     // level should NOT fall inside, so the override is verifiably taking
     // effect rather than coincidentally matching the shipped 6-12 default.
@@ -568,7 +568,7 @@ test('.clearfelt/domain.md target_grade_level_min/max overrides clearfelt.config
     assert.equal(withDomain.readability.withinTargetRange, false, 'a real document should not happen to sit inside a 30-32 grade-level band');
   } finally {
     if (existsSync(domainPath)) rmSync(domainPath);
-    if (!alreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+    if (!alreadyExisted && existsSync(clearfeltWritingDir)) rmSync(clearfeltWritingDir, { recursive: true, force: true });
     releaseLock();
   }
 });
@@ -655,9 +655,9 @@ test('--mode score: registerCheck never appears, even with --register warm (advi
 });
 
 test('a voice profile\'s own "## Register" field is picked up with no --register flag at all', () => {
-  const voicesDir = join(FIXTURES, '.clearfelt', 'voices');
-  const clearfeltDir = join(FIXTURES, '.clearfelt');
-  const alreadyExisted = existsSync(clearfeltDir);
+  const voicesDir = join(FIXTURES, '.clearfelt-writing', 'voices');
+  const clearfeltWritingDir = join(FIXTURES, '.clearfelt-writing');
+  const alreadyExisted = existsSync(clearfeltWritingDir);
   const profilePath = join(voicesDir, 'warm-voice.md');
   const path = join(FIXTURES, 'register-voice-tmp.md');
   writeFileSync(path, "What's the tell that someone's faking it?\n");
@@ -673,15 +673,15 @@ test('a voice profile\'s own "## Register" field is picked up with no --register
     } finally {
       rmSync(path);
       if (existsSync(profilePath)) rmSync(profilePath);
-      if (!alreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+      if (!alreadyExisted && existsSync(clearfeltWritingDir)) rmSync(clearfeltWritingDir, { recursive: true, force: true });
     }
   });
 });
 
 test('register: an override file with no "## Register" section inherits the base file\'s register (extends:, same precedence as Sentence rhythm)', () => {
-  const voicesDir = join(FIXTURES, '.clearfelt', 'voices');
-  const clearfeltDir = join(FIXTURES, '.clearfelt');
-  const alreadyExisted = existsSync(clearfeltDir);
+  const voicesDir = join(FIXTURES, '.clearfelt-writing', 'voices');
+  const clearfeltWritingDir = join(FIXTURES, '.clearfelt-writing');
+  const alreadyExisted = existsSync(clearfeltWritingDir);
   const basePath = join(voicesDir, 'general.md');
   const overridePath = join(voicesDir, 'quiet.md');
   const path = join(FIXTURES, 'register-inherit-tmp.md');
@@ -699,15 +699,15 @@ test('register: an override file with no "## Register" section inherits the base
       rmSync(path);
       if (existsSync(basePath)) rmSync(basePath);
       if (existsSync(overridePath)) rmSync(overridePath);
-      if (!alreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+      if (!alreadyExisted && existsSync(clearfeltWritingDir)) rmSync(clearfeltWritingDir, { recursive: true, force: true });
     }
   });
 });
 
 test('register: an override file\'s own "## Register" wins over the base file it extends', () => {
-  const voicesDir = join(FIXTURES, '.clearfelt', 'voices');
-  const clearfeltDir = join(FIXTURES, '.clearfelt');
-  const alreadyExisted = existsSync(clearfeltDir);
+  const voicesDir = join(FIXTURES, '.clearfelt-writing', 'voices');
+  const clearfeltWritingDir = join(FIXTURES, '.clearfelt-writing');
+  const alreadyExisted = existsSync(clearfeltWritingDir);
   const basePath = join(voicesDir, 'general.md');
   const overridePath = join(voicesDir, 'louder.md');
   const path = join(FIXTURES, 'register-override-wins-tmp.md');
@@ -725,15 +725,15 @@ test('register: an override file\'s own "## Register" wins over the base file it
       rmSync(path);
       if (existsSync(basePath)) rmSync(basePath);
       if (existsSync(overridePath)) rmSync(overridePath);
-      if (!alreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+      if (!alreadyExisted && existsSync(clearfeltWritingDir)) rmSync(clearfeltWritingDir, { recursive: true, force: true });
     }
   });
 });
 
 test('register: an invalid value inside a voice profile throws a clear error rather than silently defaulting', () => {
-  const voicesDir = join(FIXTURES, '.clearfelt', 'voices');
-  const clearfeltDir = join(FIXTURES, '.clearfelt');
-  const alreadyExisted = existsSync(clearfeltDir);
+  const voicesDir = join(FIXTURES, '.clearfelt-writing', 'voices');
+  const clearfeltWritingDir = join(FIXTURES, '.clearfelt-writing');
+  const alreadyExisted = existsSync(clearfeltWritingDir);
   const profilePath = join(voicesDir, 'broken-register.md');
   const path = join(FIXTURES, 'register-invalid-tmp.md');
   writeFileSync(path, 'Some text.\n');
@@ -753,7 +753,7 @@ test('register: an invalid value inside a voice profile throws a clear error rat
     } finally {
       rmSync(path);
       if (existsSync(profilePath)) rmSync(profilePath);
-      if (!alreadyExisted && existsSync(clearfeltDir)) rmSync(clearfeltDir, { recursive: true, force: true });
+      if (!alreadyExisted && existsSync(clearfeltWritingDir)) rmSync(clearfeltWritingDir, { recursive: true, force: true });
     }
   });
 });

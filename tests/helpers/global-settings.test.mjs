@@ -10,7 +10,7 @@ import { tmpdir, homedir } from 'node:os';
 import { withGlobalSettings, acquireLock, releaseLock } from './global-settings.mjs';
 
 test('withGlobalSettings writes the given content during fn and restores exact prior absence afterward', () => {
-  const homeSettingsPath = join(homedir(), '.clearfelt', 'settings.md');
+  const homeSettingsPath = join(homedir(), '.clearfelt-writing', 'settings.md');
 
   // Not read outside the lock: an existsSync() here would race against any
   // other test file's own withGlobalSettings call mutating this same real
@@ -32,7 +32,7 @@ test('withGlobalSettings writes the given content during fn and restores exact p
 });
 
 test('a second acquireLock while the first is held times out instead of hanging or double-acquiring', () => {
-  const testLockPath = join(tmpdir(), 'clearfelt-global-settings-lock-test');
+  const testLockPath = join(tmpdir(), 'clearfelt-writing-global-settings-lock-test');
   if (existsSync(testLockPath)) rmSync(testLockPath, { recursive: true, force: true });
 
   acquireLock(5000, testLockPath);
@@ -48,18 +48,18 @@ test('acquireLock rethrows a non-contention mkdir failure instead of treating it
   // EEXIST: a real, different failure mode from "someone else holds the
   // lock", and acquireLock must surface it immediately rather than silently
   // retrying until the timeout.
-  const unreachablePath = join(tmpdir(), 'clearfelt-lock-test-no-such-parent-dir', 'nested', 'lock');
+  const unreachablePath = join(tmpdir(), 'clearfelt-writing-lock-test-no-such-parent-dir', 'nested', 'lock');
   assert.throws(() => acquireLock(5000, unreachablePath), (err) => err.code === 'ENOENT');
 });
 
 test('releaseLock on an already-released (or never-acquired) lock does not throw', () => {
-  const testLockPath = join(tmpdir(), 'clearfelt-global-settings-lock-test-idempotent');
+  const testLockPath = join(tmpdir(), 'clearfelt-writing-global-settings-lock-test-idempotent');
   assert.equal(existsSync(testLockPath), false);
   assert.doesNotThrow(() => releaseLock(testLockPath));
 });
 
 test('mkdirSync-based mutual exclusion actually excludes: two processes cannot both hold the lock at once', () => {
-  const testLockPath = join(tmpdir(), 'clearfelt-global-settings-lock-test-exclusive');
+  const testLockPath = join(tmpdir(), 'clearfelt-writing-global-settings-lock-test-exclusive');
   if (existsSync(testLockPath)) rmSync(testLockPath, { recursive: true, force: true });
 
   acquireLock(5000, testLockPath);

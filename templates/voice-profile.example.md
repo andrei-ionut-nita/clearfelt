@@ -1,10 +1,10 @@
 # Voice profile
 
-Copy this file to `.clearfelt/voice-profile.md` in your own project (or run `/clearfelt setup`, which writes it for you). `/clearfelt rewrite` reads it before rewriting anything, and a preference stated here always wins over the shipped rule files.
+Copy this file to `.clearfelt-writing/voice-profile.md` in your own project (or run `/clearfelt-writing setup`, which writes it for you). `/clearfelt-writing rewrite` reads it before rewriting anything, and a preference stated here always wins over the shipped rule files.
 
 ## Platform-scoped inheritance (optional, `voice.mode: multi` only)
 
-A file under `.clearfelt/voices/<name>.md` can start with a one-line `extends: <base-name>` directive, naming another file in the same `voices/` directory (e.g. `extends: general`). One hop only, no chained inheritance. See [docs/decisions/0021](../docs/decisions/0021-platform-scoped-voice-inheritance.md) for the full design; the short version:
+A file under `.clearfelt-writing/voices/<name>.md` can start with a one-line `extends: <base-name>` directive, naming another file in the same `voices/` directory (e.g. `extends: general`). One hop only, no chained inheritance. See [docs/decisions/0021](../docs/decisions/0021-platform-scoped-voice-inheritance.md) for the full design; the short version:
 
 ```
 extends: general
@@ -24,7 +24,7 @@ Leave this line out entirely for a plain, standalone profile (single-writer mode
 
 ## Words I want to keep using
 
-List words or phrases here that the base rule files would otherwise flag but that you actually like. One per line. `/clearfelt rewrite` will never touch these.
+List words or phrases here that the base rule files would otherwise flag but that you actually like. One per line. `/clearfelt-writing rewrite` will never touch these.
 
 - (example) "honestly," as a sentence opener
 
@@ -36,13 +36,13 @@ Anything specific to you that isn't already in `rules/banned_words/`.
 
 ## Sentence rhythm
 
-A sentence or two describing how you naturally write: short and punchy, long and winding, mostly formal, mostly casual, a deliberate mix. `/clearfelt setup` fills this in from a writing sample or a direct question if you don't have one handy.
+A sentence or two describing how you naturally write: short and punchy, long and winding, mostly formal, mostly casual, a deliberate mix. `/clearfelt-writing setup` fills this in from a writing sample or a direct question if you don't have one handy.
 
 Default (no profile set up yet): mixed length, casual, contractions welcome.
 
 ## Register
 
-"Sound like a human" isn't one target: real humans range from blunt to diplomatic. This field states which end of that range this voice sits at, per [docs/decisions/0024](../docs/decisions/0024-voice-register.md). Never affects the score; `/clearfelt audit` surfaces a mismatch as an advisory note only.
+"Sound like a human" isn't one target: real humans range from blunt to diplomatic. This field states which end of that range this voice sits at, per [docs/decisions/0024](../docs/decisions/0024-voice-register.md). Never affects the score; `/clearfelt-writing audit` surfaces a mismatch as an advisory note only.
 
 - `neutral` (default): no tone check runs at all.
 - `direct`: flags hedging words that soften a claim past the point of taking a real position (maybe, perhaps, I think...).
@@ -59,7 +59,7 @@ Hard rules that should never be broken, regardless of intensity setting.
 
 ## Personal calibration (computed)
 
-Computed, not hand-written: `node scripts/calibrate.mjs <sample-file-or-directory>` measures a writer's own vocabulary diversity and sentence/paragraph rhythm from real past writing, and `/clearfelt setup` writes the result here. When present, these three numbers override `clearfelt.config.md`'s generic, fixture-derived defaults for this project's scoring, so a document is measured against this writer's own natural rhythm instead of a stranger's baseline. Leave unset (delete this section, or leave the fields blank) to use the shipped generic defaults.
+Computed, not hand-written: `node scripts/calibrate.mjs <sample-file-or-directory>` measures a writer's own vocabulary diversity and sentence/paragraph rhythm from real past writing, and `/clearfelt-writing setup` writes the result here. When present, these three numbers override `clearfelt-writing.config.md`'s generic, fixture-derived defaults for this project's scoring, so a document is measured against this writer's own natural rhythm instead of a stranger's baseline. Leave unset (delete this section, or leave the fields blank) to use the shipped generic defaults.
 
 A directory of several past pieces gives sturdier numbers than one short pasted sample; `scripts/calibrate.mjs` warns when the input is under ~300 words. Re-run it and update these values if the writer's style meaningfully changes, or if the original calibration ran on a thin sample.
 

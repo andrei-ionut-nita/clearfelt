@@ -70,11 +70,11 @@ Two more source keys used in the rule files, for honesty about what they actuall
 | Key | What it means |
 |---|---|
 | `research-synthesis-2026` | A specific claim (e.g. that AI text overuses "furthermore," "in conclusion," "leverage") that came from the multi-round research synthesis this project was built from, but that the synthesis itself didn't trace to one specific paper. It's a secondhand pattern observation from a research assistant reading across many of the sources above, not a citation to a single study. |
-| `clearfelt-heuristic` | This project's own observation, not attributed to any external source. Used sparingly, and only for things that are hard to get wrong (like "identical paragraph lengths read as templated") rather than anything that needed a study to establish. |
+| `clearfelt-writing-heuristic` | This project's own observation, not attributed to any external source. Used sparingly, and only for things that are hard to get wrong (like "identical paragraph lengths read as templated") rather than anything that needed a study to establish. |
 
 ## Community prior art
 
-Not academic research: pattern lists assembled by people building anti-AI-slop tools, cited here because several of clearfelt's phrase and lexicon rules were adapted from them directly. See `decisions/0001-deterministic-scored-detection.md` for how each one compares architecturally.
+Not academic research: pattern lists assembled by people building anti-AI-slop tools, cited here because several of clearfelt-writing's phrase and lexicon rules were adapted from them directly. See `decisions/0001-deterministic-scored-detection.md` for how each one compares architecturally.
 
 | Key | What it is | URL |
 |---|---|---|

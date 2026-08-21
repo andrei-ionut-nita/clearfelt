@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://clearfelt/schemas/detect-report.schema.json",
-  "title": "clearfelt detect.mjs report output",
-  "description": "Documents the JSON scripts/detect.mjs prints in --mode report (single-file case). This is documentation and a target for scripts/lint.mjs's checkOutputShape(), not a file clearfelt reads or a generic JSON-Schema validator this repo runs (dependency-free, per CLAUDE.md): a model reading this output over Bash has no schema validation between the two, so a real shape drift here would silently confuse the model rather than fail loudly, which is what checkOutputShape() exists to catch instead. --mode score returns only { target, score }; --mode scan returns { target, occurrences }; a directory target wraps this shape once per file under a top-level { target, isDirectory: true, score, files: [...] }. See scripts/lib/report.mjs's runFile() for the actual construction.",
+  "$id": "https://clearfelt-writing/schemas/detect-report.schema.json",
+  "title": "clearfelt-writing detect.mjs report output",
+  "description": "Documents the JSON scripts/detect.mjs prints in --mode report (single-file case). This is documentation and a target for scripts/lint.mjs's checkOutputShape(), not a file clearfelt-writing reads or a generic JSON-Schema validator this repo runs (dependency-free, per CLAUDE.md): a model reading this output over Bash has no schema validation between the two, so a real shape drift here would silently confuse the model rather than fail loudly, which is what checkOutputShape() exists to catch instead. --mode score returns only { target, score }; --mode scan returns { target, occurrences }; a directory target wraps this shape once per file under a top-level { target, isDirectory: true, score, files: [...] }. See scripts/lib/report.mjs's runFile() for the actual construction.",
   "type": "object",
   "required": ["target", "score", "leadDriver", "breakdown", "categoryCounts", "categoryPoints", "patternSummary", "hits", "readability"],
   "properties": {

@@ -210,11 +210,11 @@ function parseConfigTableKeys(text, heading) {
 }
 
 function checkConfigDrift() {
-  const configText = readFileSync(join(ROOT, 'clearfelt.config.md'), 'utf8');
+  const configText = readFileSync(join(ROOT, 'clearfelt-writing.config.md'), 'utf8');
   const headings = parseConfigHeadings(configText);
   for (const heading of headings) {
     if (!CONFIG_SECTIONS.includes(heading)) {
-      fail('config-drift', `clearfelt.config.md has a "## ${heading}" section not in detect.mjs's CONFIG_SECTIONS, it will never be parsed (this is exactly the round-9 category-weight bug's shape)`);
+      fail('config-drift', `clearfelt-writing.config.md has a "## ${heading}" section not in detect.mjs's CONFIG_SECTIONS, it will never be parsed (this is exactly the round-9 category-weight bug's shape)`);
     }
   }
 
@@ -243,13 +243,13 @@ function checkConfigDrift() {
         // corresponds to an actual rule category file, not stale or
         // misspelled.
         if (!categoryFiles.includes(key)) {
-          warn('config-drift', `clearfelt.config.md's "Category severity weights" row "${key}" doesn't match any rules/**/${key}.md file`);
+          warn('config-drift', `clearfelt-writing.config.md's "Category severity weights" row "${key}" doesn't match any rules/**/${key}.md file`);
         }
         continue;
       }
       const referenced = scriptsText.includes(key);
       if (!referenced) {
-        fail('config-drift', `clearfelt.config.md's "${heading}" row "${key}" is never referenced in scripts/detect.mjs or scripts/hook.mjs`);
+        fail('config-drift', `clearfelt-writing.config.md's "${heading}" row "${key}" is never referenced in scripts/detect.mjs or scripts/hook.mjs`);
       }
     }
   }
@@ -265,7 +265,7 @@ function checkConfigDrift() {
 // (starts with a pipe) but doesn't match the parser's own row shape, so a
 // malformed edit fails loudly here instead of silently reverting to a default.
 function checkConfigRowSyntax() {
-  const path = join(ROOT, 'clearfelt.config.md');
+  const path = join(ROOT, 'clearfelt-writing.config.md');
   const text = readFileSync(path, 'utf8');
   const lines = text.split('\n');
   for (const heading of CONFIG_SECTIONS) {
@@ -281,14 +281,14 @@ function checkConfigRowSyntax() {
       if (/^\|\s*([\w.]+)\s*\|\s*([^|]+?)\s*\|/.test(trimmed)) continue; // parses fine
       fail(
         'config-syntax',
-        `clearfelt.config.md:${i + 1} under "## ${heading}" looks like a table row but doesn't match parseConfigTable's expected "| key | value |" shape, so it will be silently skipped and fall back to a default: ${trimmed}`
+        `clearfelt-writing.config.md:${i + 1} under "## ${heading}" looks like a table row but doesn't match parseConfigTable's expected "| key | value |" shape, so it will be silently skipped and fall back to a default: ${trimmed}`
       );
     }
   }
 }
 
 // ---- check: config defaults drift (three sources of truth for one number) ----
-// clearfelt.config.md's shipped defaults, scripts/lib/config.mjs's
+// clearfelt-writing.config.md's shipped defaults, scripts/lib/config.mjs's
 // CONFIG_DEFAULTS fallback-of-last-resort, and scripts/lib/score.mjs's own
 // inline `config.<key> ?? <literal>` fallbacks are three independent places
 // a default can live. loadConfig() means CONFIG_DEFAULTS only ever fires
@@ -322,7 +322,7 @@ function parseScoreFallbacks() {
 }
 
 function checkConfigDefaultsDrift() {
-  const configText = readFileSync(join(ROOT, 'clearfelt.config.md'), 'utf8');
+  const configText = readFileSync(join(ROOT, 'clearfelt-writing.config.md'), 'utf8');
   const shipped = {};
   for (const heading of CONFIG_SECTIONS) Object.assign(shipped, parseConfigTableValues(configText, heading));
   const scoreFallbacks = parseScoreFallbacks();
@@ -331,13 +331,13 @@ function checkConfigDefaultsDrift() {
     if (key in shipped && String(shipped[key]) !== String(literal)) {
       fail(
         'config-defaults-drift',
-        `score.mjs's fallback for "${key}" is ${literal}, but clearfelt.config.md ships ${shipped[key]}. These must agree, a mismatch means score.mjs's own default is stale.`,
+        `score.mjs's fallback for "${key}" is ${literal}, but clearfelt-writing.config.md ships ${shipped[key]}. These must agree, a mismatch means score.mjs's own default is stale.`,
       );
     }
     if (key in CONFIG_DEFAULTS && String(CONFIG_DEFAULTS[key]) !== String(literal)) {
       fail(
         'config-defaults-drift',
-        `score.mjs's fallback for "${key}" is ${literal}, but scripts/lib/config.mjs's CONFIG_DEFAULTS has ${CONFIG_DEFAULTS[key]}. If clearfelt.config.md's shipped row is ever missing, loadConfig() would silently return the stale CONFIG_DEFAULTS value instead of score.mjs's own fallback.`,
+        `score.mjs's fallback for "${key}" is ${literal}, but scripts/lib/config.mjs's CONFIG_DEFAULTS has ${CONFIG_DEFAULTS[key]}. If clearfelt-writing.config.md's shipped row is ever missing, loadConfig() would silently return the stale CONFIG_DEFAULTS value instead of score.mjs's own fallback.`,
       );
     }
   }

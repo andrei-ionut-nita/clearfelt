@@ -1,6 +1,6 @@
-# The style clearfelt writes toward
+# The style clearfelt-writing writes toward
 
-This is the standalone reference for what "humanized" actually means here. It's what `/clearfelt rewrite` is optimizing for, and it's useful on its own even if you never run the tool: a checklist for catching AI-sounding writing by eye.
+This is the standalone reference for what "humanized" actually means here. It's what `/clearfelt-writing rewrite` is optimizing for, and it's useful on its own even if you never run the tool: a checklist for catching AI-sounding writing by eye.
 
 ## Cadence
 
@@ -37,11 +37,11 @@ Seven categories of phrase and structure, documented in full in `rules/antipatte
 
 ## What doesn't get flagged
 
-A voice profile always wins. If `.clearfelt/voice-profile.md` says you like a word or a construction the base rules would otherwise catch, `/clearfelt rewrite` leaves it alone. This tool is trying to remove the tells that make writing sound like nobody in particular wrote it, not to erase what makes your writing sound like you.
+A voice profile always wins. If `.clearfelt-writing/voice-profile.md` says you like a word or a construction the base rules would otherwise catch, `/clearfelt-writing rewrite` leaves it alone. This tool is trying to remove the tells that make writing sound like nobody in particular wrote it, not to erase what makes your writing sound like you.
 
 ## Readability, tracked separately
 
-`/clearfelt audit` also reports Flesch Reading Ease, Flesch-Kincaid Grade Level, Gunning Fog, and two processing-fluency signals (passive-voice and nominalization density). This is a different axis from everything above: it measures whether a piece reads at the right level for its audience, not whether it sounds AI-generated. The two never get blended into one number. See "Readability" in `reference/audit.md` for the full breakdown and sourcing.
+`/clearfelt-writing audit` also reports Flesch Reading Ease, Flesch-Kincaid Grade Level, Gunning Fog, and two processing-fluency signals (passive-voice and nominalization density). This is a different axis from everything above: it measures whether a piece reads at the right level for its audience, not whether it sounds AI-generated. The two never get blended into one number. See "Readability" in `reference/audit.md` for the full breakdown and sourcing.
 
 ## No fabrication
 
@@ -49,4 +49,4 @@ The rewrite pass never invents a fact, name, date, or citation that wasn't alrea
 
 ## Where this comes from
 
-None of the above is arbitrary. [RESEARCH.md](RESEARCH.md) has the underlying findings (burstiness, lexical diversity, certainty markers, and more), and every rule bullet in `rules/` carries a `source:` key resolved in [SOURCES.md](SOURCES.md). If you're skeptical that a flagged word or phrase actually matters, that's the right instinct: go check the source instead of taking clearfelt's word for it.
+None of the above is arbitrary. [RESEARCH.md](RESEARCH.md) has the underlying findings (burstiness, lexical diversity, certainty markers, and more), and every rule bullet in `rules/` carries a `source:` key resolved in [SOURCES.md](SOURCES.md). If you're skeptical that a flagged word or phrase actually matters, that's the right instinct: go check the source instead of taking clearfelt-writing's word for it.

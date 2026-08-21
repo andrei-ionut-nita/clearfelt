@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * clearfelt hook: admin actions (status/on/off/ignore-rule/ignore-file) when
+ * clearfelt-writing hook: admin actions (status/on/off/ignore-rule/ignore-file) when
  * invoked with an action argument, or the actual PostToolUse hook body when
  * invoked with none (Claude Code calls it after Edit/Write/MultiEdit and
  * feeds the tool call as JSON on stdin).
  *
- * Live per-project state (enabled/quiet/ignores) lives in .clearfelt/hook-state.md,
- * gitignored, separate from the tracked clearfelt.config.md defaults, so toggling
+ * Live per-project state (enabled/quiet/ignores) lives in .clearfelt-writing/hook-state.md,
+ * gitignored, separate from the tracked clearfelt-writing.config.md defaults, so toggling
  * the hook never produces a diff in the shared repo file.
  *
  * Usage:
@@ -25,7 +25,7 @@ import { spawnSync } from 'node:child_process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const STATE_DIR = join(process.cwd(), '.clearfelt');
+const STATE_DIR = join(process.cwd(), '.clearfelt-writing');
 const STATE_FILE = join(STATE_DIR, 'hook-state.md');
 const SETTINGS_FILE = join(process.cwd(), '.claude', 'settings.local.json');
 const TEXT_EXTENSIONS = new Set(['.md', '.mdx', '.txt']);
@@ -49,7 +49,7 @@ export function readState() {
 function writeState(state) {
   if (!existsSync(STATE_DIR)) mkdirSync(STATE_DIR, { recursive: true });
   const lines = [
-    '# clearfelt hook state (local, not shared)',
+    '# clearfelt-writing hook state (local, not shared)',
     '',
     `enabled: ${state.enabled}`,
     `quiet: ${state.quiet}`,
@@ -95,7 +95,7 @@ function removeHookManifest() {
   const existing = JSON.parse(readFileSync(SETTINGS_FILE, 'utf8'));
   if (existing.hooks?.PostToolUse) {
     existing.hooks.PostToolUse = existing.hooks.PostToolUse.filter(
-      (e) => !JSON.stringify(e).includes('clearfelt'),
+      (e) => !JSON.stringify(e).includes('clearfelt-writing'),
     );
     if (existing.hooks.PostToolUse.length === 0) delete existing.hooks.PostToolUse;
   }
@@ -115,14 +115,14 @@ function runAdmin(action, arg) {
     state.enabled = true;
     writeState(state);
     installHookManifest();
-    console.log('Done. The clearfelt hook will fire after the next Edit/Write/MultiEdit on a text file.');
+    console.log('Done. The clearfelt-writing hook will fire after the next Edit/Write/MultiEdit on a text file.');
     return;
   }
   if (action === 'off') {
     state.enabled = false;
     writeState(state);
     removeHookManifest();
-    console.log('Done. New edits will not trigger the clearfelt hook in this project until you run "$clearfelt hooks on".');
+    console.log('Done. New edits will not trigger the clearfelt-writing hook in this project until you run "$clearfelt-writing hooks on".');
     return;
   }
   if (action === 'ignore-rule') {
@@ -213,11 +213,11 @@ export function runHookBody({
 
   const hits = report.hits.filter((h) => !state.ignoreRules.includes(h.category));
   if (hits.length === 0) {
-    if (!state.quiet) console.log(`clearfelt: ${filePath} scored ${report.score}/100, no slop hits.`);
+    if (!state.quiet) console.log(`clearfelt-writing: ${filePath} scored ${report.score}/100, no slop hits.`);
     return;
   }
   console.log(
-    `clearfelt: ${filePath} scored ${report.score}/100 with ${hits.length} hit(s). Run "/clearfelt audit ${filePath}" for details.`,
+    `clearfelt-writing: ${filePath} scored ${report.score}/100 with ${hits.length} hit(s). Run "/clearfelt-writing audit ${filePath}" for details.`,
   );
 }
 

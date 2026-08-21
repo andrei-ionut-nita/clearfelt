@@ -71,7 +71,7 @@ test('empty directory (no .md/.txt/.mdx files): exits non-zero with a clear erro
 });
 
 test('a path outside the project directory is refused, even when it exists', () => {
-  const outsideDir = join(tmpdir(), 'clearfelt-calibrate-outside-test');
+  const outsideDir = join(tmpdir(), 'clearfelt-writing-calibrate-outside-test');
   mkdirSync(outsideDir, { recursive: true });
   try {
     assert.throws(() => run(outsideDir), /Command failed/);

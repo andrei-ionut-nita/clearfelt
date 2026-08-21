@@ -1,7 +1,7 @@
-// Config-loading and precedence layer: parses clearfelt.config.md's Markdown
+// Config-loading and precedence layer: parses clearfelt-writing.config.md's Markdown
 // tables, merges shipped defaults with the skill's own config and a user's
 // global overrides, and reads the two project-scoped override files
-// (.clearfelt/voice-profile.md, .clearfelt/domain.md). Split out of
+// (.clearfelt-writing/voice-profile.md, .clearfelt-writing/domain.md). Split out of
 // detect.mjs so scripts/explain.mjs and scripts/check.mjs can import this
 // precedence logic directly instead of re-implementing it.
 
@@ -65,7 +65,7 @@ export function loadConfigFile(path) {
   return merged;
 }
 
-// Kept in sync by hand with clearfelt.config.md's shipped defaults and
+// Kept in sync by hand with clearfelt-writing.config.md's shipped defaults and
 // score.mjs's own inline `config.<key> ?? <literal>` fallbacks (see
 // docs/decisions/0011 for where the statistical-signal weights below came
 // from). scripts/lint.mjs's "config defaults drift" check fails the build
@@ -107,12 +107,12 @@ export const CONFIG_DEFAULTS = {
 };
 
 // Precedence, low to high: hardcoded defaults, the skill's own shipped
-// clearfelt.config.md (tracked in git, reset on every skill update), then
-// ~/.clearfelt/settings.md (never shipped, never touched by an update,
+// clearfelt-writing.config.md (tracked in git, reset on every skill update), then
+// ~/.clearfelt-writing/settings.md (never shipped, never touched by an update,
 // the actual target for any "save my preference globally" action).
 function configLayers() {
-  const shipped = loadConfigFile(join(ROOT, 'clearfelt.config.md'));
-  const globalOverrides = loadConfigFile(join(homedir(), '.clearfelt', 'settings.md'));
+  const shipped = loadConfigFile(join(ROOT, 'clearfelt-writing.config.md'));
+  const globalOverrides = loadConfigFile(join(homedir(), '.clearfelt-writing', 'settings.md'));
   return { defaults: CONFIG_DEFAULTS, shipped, globalOverrides };
 }
 
@@ -122,7 +122,7 @@ export function loadConfig() {
 }
 
 // Same merge as loadConfig(), but keeps which layer each key's final value
-// came from, so /clearfelt explain can show provenance instead of just the
+// came from, so /clearfelt-writing explain can show provenance instead of just the
 // flattened result. loadConfig() stays the single source of truth for the
 // merge order; this just also records it.
 export function loadConfigWithProvenance() {
@@ -130,9 +130,9 @@ export function loadConfigWithProvenance() {
   const result = {};
   for (const key of new Set([...Object.keys(defaults), ...Object.keys(shipped), ...Object.keys(globalOverrides)])) {
     if (key in globalOverrides) {
-      result[key] = { value: globalOverrides[key], source: 'global (~/.clearfelt/settings.md)' };
+      result[key] = { value: globalOverrides[key], source: 'global (~/.clearfelt-writing/settings.md)' };
     } else if (key in shipped) {
-      result[key] = { value: shipped[key], source: 'shipped (clearfelt.config.md)' };
+      result[key] = { value: shipped[key], source: 'shipped (clearfelt-writing.config.md)' };
     } else {
       result[key] = { value: defaults[key], source: 'default' };
     }
@@ -156,8 +156,8 @@ export function extractBulletSection(text, heading) {
 
 export function voiceProfilePath(targetDir, config, voiceName) {
   return config['voice.mode'] === 'multi' && voiceName
-    ? join(targetDir, '.clearfelt', 'voices', `${voiceName}.md`)
-    : join(targetDir, '.clearfelt', 'voice-profile.md');
+    ? join(targetDir, '.clearfelt-writing', 'voices', `${voiceName}.md`)
+    : join(targetDir, '.clearfelt-writing', 'voice-profile.md');
 }
 
 // Reads a voice file's own extends: directive, if any (ADR 0021). Only
@@ -188,7 +188,7 @@ export function resolveVoiceChain(targetDir, config, voiceName) {
   if (!baseName) {
     return { overridePath, overrideText, baseName: null, basePath: null, baseText: null };
   }
-  const basePath = join(targetDir, '.clearfelt', 'voices', `${baseName}.md`);
+  const basePath = join(targetDir, '.clearfelt-writing', 'voices', `${baseName}.md`);
   if (!existsSync(basePath)) {
     throw new Error(`${overridePath} declares "extends: ${baseName}", but ${basePath} does not exist.`);
   }
@@ -263,14 +263,14 @@ export function loadVoiceRegister(targetDir, config, voiceName) {
 // ---- domain profile precedence ----
 
 export function loadDomainOverrides(targetDir) {
-  const domainPath = join(targetDir, '.clearfelt', 'domain.md');
+  const domainPath = join(targetDir, '.clearfelt-writing', 'domain.md');
   if (!existsSync(domainPath)) return new Set();
   const text = readFileSync(domainPath, 'utf8');
   return extractBulletSection(text, '## Technical terms exempt from flagging');
 }
 
 export function loadDomainReadabilityTarget(targetDir) {
-  const domainPath = join(targetDir, '.clearfelt', 'domain.md');
+  const domainPath = join(targetDir, '.clearfelt-writing', 'domain.md');
   if (!existsSync(domainPath)) return {};
   const text = readFileSync(domainPath, 'utf8');
   const target = {};
@@ -284,9 +284,9 @@ export function loadDomainReadabilityTarget(targetDir) {
 // ---- personal calibration (voice-profile-scoped statistical baseline) ----
 
 // scripts/calibrate.mjs computes these three numbers from a writer's own
-// sample or corpus and /clearfelt setup writes them into a voice profile's
+// sample or corpus and /clearfelt-writing setup writes them into a voice profile's
 // "Personal calibration (computed)" section. This function is the read side:
-// if present, these override clearfelt.config.md's generic, fixture-derived
+// if present, these override clearfelt-writing.config.md's generic, fixture-derived
 // defaults (vocabulary_diversity_baseline, burstiness_baseline,
 // paragraph_variety_baseline) for this project's scoring, so a writer is
 // measured against their own natural rhythm instead of a stranger's. Purely

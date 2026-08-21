@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * clearfelt detector: parses the Markdown rule files under rules/, scans a
+ * clearfelt-writing detector: parses the Markdown rule files under rules/, scans a
  * target file against them, and prints a deterministic JSON score report.
  * Zero external dependencies, Node stdlib only. Thin CLI entrypoint; the
  * actual logic lives in scripts/lib/ (config precedence, rule matching,
@@ -24,7 +24,7 @@ import { loadRules } from './lib/rules.mjs';
 import { runFile } from './lib/report.mjs';
 
 // Refuses to scan a path outside the project (process.cwd()), the CLI's
-// implicit trust boundary: a crafted `/clearfelt audit <path>` argument or,
+// implicit trust boundary: a crafted `/clearfelt-writing audit <path>` argument or,
 // more importantly, a crafted PostToolUse payload reaching hook.mjs (which
 // calls this same script) could otherwise direct the detector at something
 // like ~/.ssh/id_rsa, and its contents (up to 120 chars/line, as `snippet`)
@@ -38,14 +38,14 @@ function assertWithinCwd(targetPath, label) {
   if (!withinCwd) {
     console.error(
       `Error: ${label} "${targetPath}" resolves outside the current project (${cwdReal}). ` +
-        'clearfelt only scans files inside the project it was invoked from.',
+        'clearfelt-writing only scans files inside the project it was invoked from.',
     );
     process.exit(1);
   }
   return targetReal;
 }
 
-const USAGE = `clearfelt detector: scans a file or directory and prints a deterministic JSON score report.
+const USAGE = `clearfelt-writing detector: scans a file or directory and prints a deterministic JSON score report.
 
 Usage:
   node scripts/detect.mjs --mode <report|score|scan> <path|directory> [options]
@@ -53,12 +53,12 @@ Usage:
 Modes:
   report   Full JSON report: score, breakdown, category/pattern summaries, hits, readability. Default.
   score    Just { score } (or { target, score } for a single file, { score, files } for a directory).
-  scan     Every rule occurrence with tier-suppression bypassed, used by /clearfelt rewrite's editing tiers.
+  scan     Every rule occurrence with tier-suppression bypassed, used by /clearfelt-writing rewrite's editing tiers.
 
 Options:
   --save-baseline <file>     Snapshot this run's hits to <file> for later --baseline diffing.
   --baseline <file>          Only report hits new since a previous --save-baseline snapshot.
-  --voice <name>             Voice profile to apply when clearfelt.config.md's voice.mode is "multi".
+  --voice <name>             Voice profile to apply when clearfelt-writing.config.md's voice.mode is "multi".
   --exempt-repetition <text> A phrase repeated on purpose (anaphora, a hook/CTA callback), excluded
                               from the repeated-phrase penalty. Repeatable. The tool never guesses
                               intent here, so this states it: see docs/decisions/0022.
@@ -67,7 +67,7 @@ Options:
                               Never affects the score, only --mode report's registerCheck field.
   --help, -h                 Print this message and exit.
 
-<path|directory> must resolve inside the current project directory (process.cwd()); clearfelt refuses to scan a path outside it.`;
+<path|directory> must resolve inside the current project directory (process.cwd()); clearfelt-writing refuses to scan a path outside it.`;
 
 function parseArgs(argv) {
   const args = { mode: 'report', paths: [], help: false, exemptRepetition: [] };

@@ -110,9 +110,9 @@ export function runFile(targetPath, args, rules, config, overrides, register = '
     );
   }
 
-  // Computed once here (not just in report mode) so /clearfelt write and
-  // /clearfelt rewrite's iterative --mode score calls (prompts/write_loop.xml,
-  // prompts/audit_loop.xml) see this too, not only a standalone /clearfelt
+  // Computed once here (not just in report mode) so /clearfelt-writing write and
+  // /clearfelt-writing rewrite's iterative --mode score calls (prompts/write_loop.xml,
+  // prompts/audit_loop.xml) see this too, not only a standalone /clearfelt-writing
   // audit report. Only present when it actually fires, see docs/decisions/0023.
   const langSignal = languageConfidence(scanText);
   const languageWarning =

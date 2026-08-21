@@ -133,13 +133,13 @@ test('check.hard_fail_on_constraint_violation: false demotes a must_contain miss
   );
 });
 
-test('named constraint set (.clearfelt/constraints/<name>.md) loads and applies, inline flags extend it', () => {
-  const clearfeltDir = join(FIXTURES, '.clearfelt', 'constraints');
-  const constraintPath = join(clearfeltDir, 'test-set.md');
-  const alreadyExisted = existsSync(join(FIXTURES, '.clearfelt'));
+test('named constraint set (.clearfelt-writing/constraints/<name>.md) loads and applies, inline flags extend it', () => {
+  const clearfeltWritingDir = join(FIXTURES, '.clearfelt-writing', 'constraints');
+  const constraintPath = join(clearfeltWritingDir, 'test-set.md');
+  const alreadyExisted = existsSync(join(FIXTURES, '.clearfelt-writing'));
 
   try {
-    mkdirSync(clearfeltDir, { recursive: true });
+    mkdirSync(clearfeltWritingDir, { recursive: true });
     writeFileSync(
       constraintPath,
       ['# Constraints: test-set', '', '## Limits', '', '| Setting | Value |', '|---|---|', '| max_chars | 30 |', '', '## Must contain', '', '## Must not contain', ''].join(
@@ -170,17 +170,17 @@ test('named constraint set (.clearfelt/constraints/<name>.md) loads and applies,
     assert.ok(extended.result.constraints.some((c) => c.rule === 'must_contain'));
   } finally {
     if (existsSync(constraintPath)) rmSync(constraintPath);
-    if (!alreadyExisted && existsSync(join(FIXTURES, '.clearfelt'))) rmSync(join(FIXTURES, '.clearfelt'), { recursive: true, force: true });
+    if (!alreadyExisted && existsSync(join(FIXTURES, '.clearfelt-writing'))) rmSync(join(FIXTURES, '.clearfelt-writing'), { recursive: true, force: true });
   }
 });
 
 test('named constraint set: max_words row, and Must contain/Must not contain bullet lists, all parse and apply', () => {
-  const clearfeltDir = join(FIXTURES, '.clearfelt', 'constraints');
-  const constraintPath = join(clearfeltDir, 'full-set.md');
-  const alreadyExisted = existsSync(join(FIXTURES, '.clearfelt'));
+  const clearfeltWritingDir = join(FIXTURES, '.clearfelt-writing', 'constraints');
+  const constraintPath = join(clearfeltWritingDir, 'full-set.md');
+  const alreadyExisted = existsSync(join(FIXTURES, '.clearfelt-writing'));
 
   try {
-    mkdirSync(clearfeltDir, { recursive: true });
+    mkdirSync(clearfeltWritingDir, { recursive: true });
     writeFileSync(
       constraintPath,
       [
@@ -210,24 +210,24 @@ test('named constraint set: max_words row, and Must contain/Must not contain bul
     assert.equal(result.constraints.find((c) => c.rule === 'must_not_contain').pass, true);
   } finally {
     if (existsSync(constraintPath)) rmSync(constraintPath);
-    if (!alreadyExisted && existsSync(join(FIXTURES, '.clearfelt'))) rmSync(join(FIXTURES, '.clearfelt'), { recursive: true, force: true });
+    if (!alreadyExisted && existsSync(join(FIXTURES, '.clearfelt-writing'))) rmSync(join(FIXTURES, '.clearfelt-writing'), { recursive: true, force: true });
   }
 });
 
 test('named constraint set: a file with no "Must not contain" heading at all reports an empty list, not a crash', () => {
-  const clearfeltDir = join(FIXTURES, '.clearfelt', 'constraints');
-  const constraintPath = join(clearfeltDir, 'no-heading-set.md');
-  const alreadyExisted = existsSync(join(FIXTURES, '.clearfelt'));
+  const clearfeltWritingDir = join(FIXTURES, '.clearfelt-writing', 'constraints');
+  const constraintPath = join(clearfeltWritingDir, 'no-heading-set.md');
+  const alreadyExisted = existsSync(join(FIXTURES, '.clearfelt-writing'));
 
   try {
-    mkdirSync(clearfeltDir, { recursive: true });
+    mkdirSync(clearfeltWritingDir, { recursive: true });
     writeFileSync(constraintPath, ['# Constraints: no-heading-set', '', '## Limits', '', '| Setting | Value |', '|---|---|', '| max_chars | 30 |', ''].join('\n'));
 
     const { result } = run('clean-rewrite-before.md', 'clean-rewrite-after.md', ['--constraints', 'no-heading-set']);
     assert.equal(result.constraints.find((c) => c.rule === 'must_not_contain'), undefined, 'no heading means no must_not_contain constraint was configured at all');
   } finally {
     if (existsSync(constraintPath)) rmSync(constraintPath);
-    if (!alreadyExisted && existsSync(join(FIXTURES, '.clearfelt'))) rmSync(join(FIXTURES, '.clearfelt'), { recursive: true, force: true });
+    if (!alreadyExisted && existsSync(join(FIXTURES, '.clearfelt-writing'))) rmSync(join(FIXTURES, '.clearfelt-writing'), { recursive: true, force: true });
   }
 });
 
@@ -307,7 +307,7 @@ test('a --before/--after path that does not exist exits non-zero with a clear er
 });
 
 test('a --before/--after path outside the project directory is refused', () => {
-  const outsideFile = join(tmpdir(), 'clearfelt-check-outside-test.md');
+  const outsideFile = join(tmpdir(), 'clearfelt-writing-check-outside-test.md');
   writeFileSync(outsideFile, 'text');
   try {
     assert.throws(() =>
@@ -387,8 +387,8 @@ test('check.hard_fail_on_locked_span_mismatch: false demotes a locked-span misma
 test('extractLockedSpans: an unterminated lock marker (no closing comment) is dropped, not treated as an open-ended span', () => {
   const beforePath = join(FIXTURES, 'unterminated-lock-before.md');
   const afterPath = join(FIXTURES, 'unterminated-lock-after.md');
-  writeFileSync(beforePath, 'Some intro text.\n\n<!-- clearfelt-lock -->\nThis never gets closed.\n');
-  writeFileSync(afterPath, 'Some intro text.\n\n<!-- clearfelt-lock -->\nThis never gets closed, and changed too.\n');
+  writeFileSync(beforePath, 'Some intro text.\n\n<!-- clearfelt-writing-lock -->\nThis never gets closed.\n');
+  writeFileSync(afterPath, 'Some intro text.\n\n<!-- clearfelt-writing-lock -->\nThis never gets closed, and changed too.\n');
   try {
     const { status, result } = run('unterminated-lock-before.md', 'unterminated-lock-after.md');
     assert.equal(result.lockedSpans.count, 0, 'an unterminated marker pair must not count as a real locked span');

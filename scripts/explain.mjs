@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * clearfelt explain: prints every currently-resolved setting and where it
- * came from (default / shipped clearfelt.config.md / global
- * ~/.clearfelt/settings.md), plus voice profile, domain profile, and hook
+ * clearfelt-writing explain: prints every currently-resolved setting and where it
+ * came from (default / shipped clearfelt-writing.config.md / global
+ * ~/.clearfelt-writing/settings.md), plus voice profile, domain profile, and hook
  * state, so a user can see the full picture before running anything else.
  * Read-only. Zero external dependencies, Node stdlib only.
  *
@@ -21,13 +21,13 @@ import {
 } from './lib/config.mjs';
 import { readState } from './hook.mjs';
 
-const USAGE = `clearfelt explain: prints every currently-resolved setting and where it came from.
+const USAGE = `clearfelt-writing explain: prints every currently-resolved setting and where it came from.
 
 Usage:
   node scripts/explain.mjs [--voice <name>]
 
 Options:
-  --voice <name>  Voice profile to inspect when clearfelt.config.md's voice.mode is "multi".
+  --voice <name>  Voice profile to inspect when clearfelt-writing.config.md's voice.mode is "multi".
   --help, -h      Print this message and exit.`;
 
 function parseArgs(argv) {
@@ -86,13 +86,13 @@ function explainVoice(config, voiceName) {
     personalCalibration:
       Object.keys(calibration).length > 0
         ? calibration
-        : 'not computed, run /clearfelt setup with a writing sample or corpus, generic defaults apply',
+        : 'not computed, run /clearfelt-writing setup with a writing sample or corpus, generic defaults apply',
     personalCalibrationSource: calibrationSource,
   };
 }
 
 function explainDomain(config) {
-  const domainPath = join(process.cwd(), '.clearfelt', 'domain.md');
+  const domainPath = join(process.cwd(), '.clearfelt-writing', 'domain.md');
   const exists = existsSync(domainPath);
   if (!exists) {
     return {
@@ -140,7 +140,7 @@ function explainDomain(config) {
     targetGradeLevel: {
       min: minMatch ? Number(minMatch[1]) : config.target_grade_level_min.value,
       max: maxMatch ? Number(maxMatch[1]) : config.target_grade_level_max.value,
-      source: minMatch || maxMatch ? '.clearfelt/domain.md' : config.target_grade_level_min.source,
+      source: minMatch || maxMatch ? '.clearfelt-writing/domain.md' : config.target_grade_level_min.source,
     },
     exemptTermCount,
   };
@@ -160,7 +160,7 @@ function main() {
 
   // Personal calibration overrides three of config's statistical-baseline
   // keys for actual scoring (see detect.mjs); reflect that here too, or
-  // /clearfelt explain would show the generic default/shipped value as if
+  // /clearfelt-writing explain would show the generic default/shipped value as if
   // it were still driving the score.
   if (typeof voice.personalCalibration === 'object') {
     for (const [key, value] of Object.entries(voice.personalCalibration)) {

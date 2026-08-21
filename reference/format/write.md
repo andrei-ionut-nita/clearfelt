@@ -1,4 +1,4 @@
-# `/clearfelt write` output
+# `/clearfelt-writing write` output
 
 Shared rules live in [conventions.md](conventions.md), read that first. This file covers the length question, the draft result, and the preservation-check block.
 
@@ -19,14 +19,14 @@ Shown in Pass 1, before any drafting, when no length preference resolves automat
 
 | Option | Target |
 |---|---|
-| Short | `short_min_words`-`short_max_words` words (150-300 by default, see `clearfelt.config.md`). A post or a short update. |
+| Short | `short_min_words`-`short_max_words` words (150-300 by default, see `clearfelt-writing.config.md`). A post or a short update. |
 | Medium | `medium_min_words`-`medium_max_words` words (400-800 by default). A standard article or blog post. |
 | Long | `long_min_words`+ words (1000+ by default), with section headers. |
 
 (waiting for a choice, then: save this? no / for every project / just this one)
 ```
 
-When a preference already resolved (saved globally, saved for this project, or set via `.clearfelt/domain.md`), skip this question. State which length is running and why, then continue.
+When a preference already resolved (saved globally, saved for this project, or set via `.clearfelt-writing/domain.md`), skip this question. State which length is running and why, then continue.
 
 ## Draft result template
 

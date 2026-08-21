@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Pin/unpin a clearfelt subcommand as a standalone $clearfelt-<command> shortcut skill.
+ * Pin/unpin a clearfelt-writing subcommand as a standalone $clearfelt-writing-<command> shortcut skill.
  * Adapted from impeccable's scripts/pin.mjs: same harness-directory discovery,
  * same pin-marker-comment convention so unpin never deletes a user's own skill.
  *
@@ -18,7 +18,7 @@ const SKILL_ROOT = resolve(__dirname, '..');
 
 const HARNESS_DIRS = ['.claude', '.cursor', '.codex', '.agents'];
 const VALID_COMMANDS = ['audit', 'rewrite', 'write', 'explain', 'setup'];
-const PIN_MARKER = '<!-- clearfelt-pinned-skill -->';
+const PIN_MARKER = '<!-- clearfelt-writing-pinned-skill -->';
 
 function findProjectRoot(startDir = process.cwd()) {
   let dir = resolve(startDir);
@@ -33,12 +33,12 @@ function findProjectRoot(startDir = process.cwd()) {
 
 function pinnedSkillContent(command) {
   return `---
-name: clearfelt-${command}
-description: Shortcut for "/clearfelt ${command}". Pinned by scripts/pin.mjs; run "node scripts/pin.mjs unpin ${command}" to remove.
+name: clearfelt-writing-${command}
+description: Shortcut for "/clearfelt-writing ${command}". Pinned by scripts/pin.mjs; run "node scripts/pin.mjs unpin ${command}" to remove.
 ---
 ${PIN_MARKER}
 
-Run the clearfelt "${command}" subcommand exactly as documented in [reference/${command}.md](${SKILL_ROOT}/reference/${command}.md). Treat this as an alias for "/clearfelt ${command}", not a separate feature.
+Run the clearfelt-writing "${command}" subcommand exactly as documented in [reference/${command}.md](${SKILL_ROOT}/reference/${command}.md). Treat this as an alias for "/clearfelt-writing ${command}", not a separate feature.
 `;
 }
 
@@ -49,12 +49,12 @@ function pin(command) {
   for (const harness of HARNESS_DIRS) {
     const harnessDir = join(projectRoot, harness);
     if (!existsSync(harnessDir)) continue;
-    const skillsDir = join(harnessDir, 'skills', `clearfelt-${command}`);
+    const skillsDir = join(harnessDir, 'skills', `clearfelt-writing-${command}`);
     const skillFile = join(skillsDir, 'SKILL.md');
     if (existsSync(skillFile)) {
       const existing = readFileSync(skillFile, 'utf8');
       if (!existing.includes(PIN_MARKER)) {
-        console.log(`Skipping ${skillFile}: a SKILL.md already exists there and isn't a clearfelt-pinned skill, leaving it alone.`);
+        console.log(`Skipping ${skillFile}: a SKILL.md already exists there and isn't a clearfelt-writing-pinned skill, leaving it alone.`);
         skipped++;
         continue;
       }
@@ -68,25 +68,25 @@ function pin(command) {
     return;
   }
   const skippedNote = skipped > 0 ? `, skipped ${skipped} (pre-existing unrelated skill)` : '';
-  console.log(`Pinned $clearfelt-${command} in ${installed} harness director${installed === 1 ? 'y' : 'ies'}${skippedNote}.`);
+  console.log(`Pinned $clearfelt-writing-${command} in ${installed} harness director${installed === 1 ? 'y' : 'ies'}${skippedNote}.`);
 }
 
 function unpin(command) {
   const projectRoot = findProjectRoot();
   let removed = 0;
   for (const harness of HARNESS_DIRS) {
-    const skillDir = join(projectRoot, harness, 'skills', `clearfelt-${command}`);
+    const skillDir = join(projectRoot, harness, 'skills', `clearfelt-writing-${command}`);
     const skillFile = join(skillDir, 'SKILL.md');
     if (!existsSync(skillFile)) continue;
     const content = readFileSync(skillFile, 'utf8');
     if (!content.includes(PIN_MARKER)) {
-      console.log(`Skipping ${skillFile}: not a clearfelt-pinned skill (no marker found), leaving it alone.`);
+      console.log(`Skipping ${skillFile}: not a clearfelt-writing-pinned skill (no marker found), leaving it alone.`);
       continue;
     }
     rmSync(skillDir, { recursive: true, force: true });
     removed++;
   }
-  console.log(removed > 0 ? `Unpinned $clearfelt-${command} from ${removed} location(s).` : 'Nothing to unpin.');
+  console.log(removed > 0 ? `Unpinned $clearfelt-writing-${command} from ${removed} location(s).` : 'Nothing to unpin.');
 }
 
 function main() {

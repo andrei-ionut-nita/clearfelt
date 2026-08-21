@@ -13,5 +13,5 @@ One entry per case: the sentence it appeared in, the odd word, the natural alter
 - **Sentence**: "Nobody diligences it the way they'd diligence a term sheet."
   **Odd**: "diligences" (verbed noun)
   **Natural**: "audits"
-  **Found**: `executive_assistant`, clearfelt-shadow-drafted Wednesday LinkedIn post, 2026-08-20. The regular (non-clearfelt) pipeline used "audits" for the same sentence; the clearfelt-drafted alternative used "diligences" while independently paraphrasing away from the source wording, and scored *higher* on vocabulary diversity (MATTR) for it, exactly the failure mode this log exists to track.
+  **Found**: `executive_assistant`, clearfelt-writing-shadow-drafted Wednesday LinkedIn post, 2026-08-20. The regular (non-clearfelt-writing) pipeline used "audits" for the same sentence; the clearfelt-writing-drafted alternative used "diligences" while independently paraphrasing away from the source wording, and scored *higher* on vocabulary diversity (MATTR) for it, exactly the failure mode this log exists to track.
   **Caught by a rule now**: yes, `rules/antipatterns/corporate_neologisms.md` (pronoun-object-scoped, so it doesn't false-positive on "due diligence document" or "diligence a term sheet").

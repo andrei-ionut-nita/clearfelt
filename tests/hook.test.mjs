@@ -23,7 +23,7 @@ function run(args, cwd, input) {
 }
 
 function makeProject() {
-  const dir = mkdtempSync(join(tmpdir(), 'clearfelt-hook-test-'));
+  const dir = mkdtempSync(join(tmpdir(), 'clearfelt-writing-hook-test-'));
   mkdirSync(join(dir, '.git'));
   return dir;
 }
@@ -50,7 +50,7 @@ test('on enables the hook and installs a PostToolUse entry in .claude/settings.l
   const dir = makeProject();
   try {
     run(['on'], dir);
-    const state = readFileSync(join(dir, '.clearfelt', 'hook-state.md'), 'utf8');
+    const state = readFileSync(join(dir, '.clearfelt-writing', 'hook-state.md'), 'utf8');
     assert.match(state, /enabled: true/);
     const settings = JSON.parse(readFileSync(join(dir, '.claude', 'settings.local.json'), 'utf8'));
     assert.equal(settings.hooks.PostToolUse.length, 1);
@@ -65,7 +65,7 @@ test('off disables the hook and removes the installed PostToolUse entry', () => 
   try {
     run(['on'], dir);
     run(['off'], dir);
-    const state = readFileSync(join(dir, '.clearfelt', 'hook-state.md'), 'utf8');
+    const state = readFileSync(join(dir, '.clearfelt-writing', 'hook-state.md'), 'utf8');
     assert.match(state, /enabled: false/);
     const settings = JSON.parse(readFileSync(join(dir, '.claude', 'settings.local.json'), 'utf8'));
     assert.equal(settings.hooks.PostToolUse, undefined);
@@ -156,15 +156,15 @@ test('off when the hook was never turned on (.claude/settings.local.json does no
   }
 });
 
-test('off preserves an unrelated PostToolUse entry a user configured themselves, only removing the clearfelt one', () => {
+test('off preserves an unrelated PostToolUse entry a user configured themselves, only removing the clearfelt-writing one', () => {
   const dir = makeProject();
   try {
     run(['on'], dir);
     const settingsPath = join(dir, '.claude', 'settings.local.json');
     const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
-    // Deliberately no substring of "clearfelt" anywhere in this entry:
+    // Deliberately no substring of "clearfelt-writing" anywhere in this entry:
     // removeHookManifest's own filter is a plain JSON.stringify(e).includes
-    // ('clearfelt') substring check, so an unrelated entry that happened to
+    // ('clearfelt-writing') substring check, so an unrelated entry that happened to
     // contain that substring would be a false test, not a real one.
     settings.hooks.PostToolUse.push({ matcher: 'Bash', hooks: [{ type: 'command', command: 'echo hello world' }] });
     writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
@@ -199,7 +199,7 @@ test('hook body scores an in-scope file and reports hits once enabled', () => {
     const target = join(dir, 'draft.md');
     writeFileSync(target, 'Delve into this seamless, hassle-free, paramount opportunity, honestly.');
     const out = run([], dir, payload(target));
-    assert.match(out, /clearfelt: .*draft\.md scored \d+\/100/);
+    assert.match(out, /clearfelt-writing: .*draft\.md scored \d+\/100/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -229,7 +229,7 @@ test('hook body silently no-ops when the payload has no file_path', () => {
 
 test('hook body refuses a file_path outside the project (isWithinCwd guard)', () => {
   const dir = makeProject();
-  const outsideDir = mkdtempSync(join(tmpdir(), 'clearfelt-hook-outside-'));
+  const outsideDir = mkdtempSync(join(tmpdir(), 'clearfelt-writing-hook-outside-'));
   try {
     run(['on'], dir);
     const outsideTarget = join(outsideDir, 'secret.md');
@@ -294,7 +294,7 @@ function captureConsoleLog(fn) {
 }
 
 test('isWithinCwd: a path that does not resolve (does not exist) fails closed, does not throw', () => {
-  assert.equal(isWithinCwd(join(tmpdir(), 'clearfelt-hook-unit-test-does-not-exist.md')), false);
+  assert.equal(isWithinCwd(join(tmpdir(), 'clearfelt-writing-hook-unit-test-does-not-exist.md')), false);
 });
 
 test('isWithinCwd: a real path inside cwd returns true', () => {
@@ -302,7 +302,7 @@ test('isWithinCwd: a real path inside cwd returns true', () => {
 });
 
 test('isWithinCwd: a real path outside cwd returns false', () => {
-  const outsideDir = mkdtempSync(join(tmpdir(), 'clearfelt-hook-iswithincwd-outside-'));
+  const outsideDir = mkdtempSync(join(tmpdir(), 'clearfelt-writing-hook-iswithincwd-outside-'));
   const outsideFile = join(outsideDir, 'outside.md');
   writeFileSync(outsideFile, 'text');
   try {

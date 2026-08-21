@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * clearfelt preservation checker: compares a source text against a rewrite
- * candidate and reports what was dropped or added, so /clearfelt rewrite's
+ * clearfelt-writing preservation checker: compares a source text against a rewrite
+ * candidate and reports what was dropped or added, so /clearfelt-writing rewrite's
  * no-fabrication guarantee is code-verified, not just prompt-instructed.
  * Zero external dependencies, Node stdlib only, same rule as detect.mjs.
  *
@@ -46,20 +46,20 @@ function assertWithinCwd(targetPath, label) {
   if (!withinCwd) {
     console.error(
       `Error: ${label} "${targetPath}" resolves outside the current project (${cwdReal}). ` +
-        'clearfelt only reads files inside the project it was invoked from.',
+        'clearfelt-writing only reads files inside the project it was invoked from.',
     );
     process.exit(1);
   }
   return targetReal;
 }
 
-const USAGE = `clearfelt preservation checker: diffs a source text against a rewrite candidate, and (optionally) verifies hard shape constraints on the candidate.
+const USAGE = `clearfelt-writing preservation checker: diffs a source text against a rewrite candidate, and (optionally) verifies hard shape constraints on the candidate.
 
 Usage:
   node scripts/check.mjs --before <path> --after <path> [constraint options]
 
 Constraint options (all optional, none required to run a plain before/after diff):
-  --constraints <name>       Load .clearfelt/constraints/<name>.md, a reusable named constraint set.
+  --constraints <name>       Load .clearfelt-writing/constraints/<name>.md, a reusable named constraint set.
   --max-chars <n>            Fail if the candidate exceeds n characters (trimmed). Overrides a named set's own max_chars.
   --max-words <n>            Fail if the candidate exceeds n words. Overrides a named set's own max_words.
   --must-contain <text>      The candidate must contain this text (or /regex/ between slashes). Repeatable, adds to a named set's list.
@@ -90,7 +90,7 @@ function parseArgs(argv) {
 // silently push a candidate over a platform's hard limit with no
 // verification step to catch it. This closes that gap the same way: a
 // declarative constraint, checked here against the real output text, not
-// just prompt-instructed. Named sets (.clearfelt/constraints/<name>.md) are
+// just prompt-instructed. Named sets (.clearfelt-writing/constraints/<name>.md) are
 // the reusable form; --max-chars etc. are the zero-setup inline form; a run
 // can use either or both, inline flags always add to (length) or extend
 // (must-contain/must-not-contain) a named set rather than silently losing
@@ -119,7 +119,7 @@ function testConstraintPattern(text, parsed) {
 
 function loadNamedConstraints(targetDir, name) {
   if (!name) return {};
-  const path = join(targetDir, '.clearfelt', 'constraints', `${name}.md`);
+  const path = join(targetDir, '.clearfelt-writing', 'constraints', `${name}.md`);
   if (!existsSync(path)) {
     console.error(`Error: --constraints "${name}" resolves to no file at ${path}.`);
     process.exit(1);
@@ -210,8 +210,8 @@ function verifyConstraints(afterRaw, constraints) {
 
 // ---- locked-span extraction (deterministic) ----
 
-const LOCK_OPEN = '<!-- clearfelt-lock -->';
-const LOCK_CLOSE = '<!-- /clearfelt-lock -->';
+const LOCK_OPEN = '<!-- clearfelt-writing-lock -->';
+const LOCK_CLOSE = '<!-- /clearfelt-writing-lock -->';
 
 function extractLockedSpans(text) {
   const spans = [];

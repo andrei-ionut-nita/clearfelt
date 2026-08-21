@@ -1,6 +1,6 @@
-# Contributing to clearfelt
+# Contributing to clearfelt-writing
 
-The rule dictionary drifts out of date as AI writing habits change, so keeping it current matters more than almost anything else in this repo. Every rule in `rules/` carries a `source:` field pointing to an entry in [docs/SOURCES.md](docs/SOURCES.md), so a reader can check where a claim actually came from instead of taking clearfelt's word for it. New additions need the same bar: a real source, not a guess dressed up as one.
+The rule dictionary drifts out of date as AI writing habits change, so keeping it current matters more than almost anything else in this repo. Every rule in `rules/` carries a `source:` field pointing to an entry in [docs/SOURCES.md](docs/SOURCES.md), so a reader can check where a claim actually came from instead of taking clearfelt-writing's word for it. New additions need the same bar: a real source, not a guess dressed up as one.
 
 ## Adding a shared pattern or word
 
@@ -19,14 +19,14 @@ The rule dictionary drifts out of date as AI writing habits change, so keeping i
      pattern instead. If the pattern can't be expressed as a regex at all
      (it requires comparing the meaning of multiple sentences, like
      restating one point three different ways), it doesn't belong in
-     `rules/` as a bullet; propose it as a `/clearfelt rewrite` reasoning
+     `rules/` as a bullet; propose it as a `/clearfelt-writing rewrite` reasoning
      step under "Qualitative signals" in `reference/audit.md` instead.
 3. Pick a severity from 1 to 9, matching how strongly the pattern reads as AI-generated. Look at the existing entries in that file for calibration before picking a number out of thin air.
 4. For banned words, pick a tier: `1` if it should always be flagged, `2` if it should only be flagged when clustered with other hits, `3` if it should only be flagged once it's clearly dense in the document. Tiers exist to cut false positives on words that are sometimes completely legitimate.
 5. **Pick a real `source:` key.** Options, in order of preference:
    - A paper or institutional report already listed in [docs/SOURCES.md](docs/SOURCES.md): use its key.
    - A paper or report not yet listed: add a row to SOURCES.md's academic table first, with a real, checkable URL, then reference its key.
-   - A pattern you've seen repeatedly in AI output but can't point to a study for: that's legitimate, but say so honestly with `source: clearfelt-heuristic`, not by inventing a citation.
+   - A pattern you've seen repeatedly in AI output but can't point to a study for: that's legitimate, but say so honestly with `source: clearfelt-writing-heuristic`, not by inventing a citation.
    - Never invent a URL or attribute a claim to a paper you haven't actually read. If you're not sure a source says what you think it says, add it to SOURCES.md's "Referenced but unresolved" table instead of the main table, and use an `unresolved-*` key.
 6. Open a PR with a one-line description of where you saw the pattern, matching the source key you used.
 
@@ -34,7 +34,7 @@ The rule dictionary drifts out of date as AI writing habits change, so keeping i
 
 If you just want to flag a word for yourself without proposing it for everyone, don't open a PR. Copy `rules/antipatterns.local.example.md` or `rules/banned_words.local.example.md` to the matching `.local.md` file in the same folder. Both are gitignored.
 
-`.clearfelt/voice-profile.md` (or `.clearfelt/voices/<name>.md` in multi-voice mode) and `.clearfelt/domain.md` are project-scoped, not shared rule files. They don't need a `source:` field and aren't PR material, same as the `.local.md` overrides above.
+`.clearfelt-writing/voice-profile.md` (or `.clearfelt-writing/voices/<name>.md` in multi-voice mode) and `.clearfelt-writing/domain.md` are project-scoped, not shared rule files. They don't need a `source:` field and aren't PR material, same as the `.local.md` overrides above.
 
 ## Changing `scripts/detect.mjs`
 

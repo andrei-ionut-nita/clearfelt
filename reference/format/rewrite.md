@@ -1,4 +1,4 @@
-# `/clearfelt rewrite` output
+# `/clearfelt-writing rewrite` output
 
 Shared rules live in [conventions.md](conventions.md), read that first. This file covers the intensity question, the rewrite result, and the preservation-check block.
 
@@ -24,7 +24,7 @@ Shown in Pass 1, before any rewriting, when no intensity preference resolves aut
 (waiting for a choice, then: save this? no / for every project / just this one)
 ```
 
-When a preference already resolved (saved globally, saved for this project, or set via `.clearfelt/domain.md`), show only the "What I'd fix" table plus one line stating which intensity is running and why. Don't ask the blocking question.
+When a preference already resolved (saved globally, saved for this project, or set via `.clearfelt-writing/domain.md`), show only the "What I'd fix" table plus one line stating which intensity is running and why. Don't ask the blocking question.
 
 ## Rewrite result template
 
@@ -62,7 +62,7 @@ How should I write this?
 
 **"What changed, and why" rules.** Every bullet names what drove the change, not just the before/after text. Cite a `patternSummary` pattern and category if a specific rule hit caused it. Cite the relevant `breakdown.impacts` label (for example "Sentence-rhythm (burstiness)") if a statistical signal did it instead. If a change happened only because the resolved intensity tier's scope allows it (a `full_rewrite`-tier sentence-variation pass with no single rule hit behind it, for example), say that plainly rather than inventing a rule that didn't fire.
 
-If a span was left unchanged despite matching a rule (`risk_tier: sensitive` protection, a `.clearfelt/domain.md` exemption, or a `.clearfelt/voice-profile.md` preference), say so as its own bullet here too: `<span> kept as-is. Protected: <reason>.` This is what makes the diff explainable in both directions, not just for what moved.
+If a span was left unchanged despite matching a rule (`risk_tier: sensitive` protection, a `.clearfelt-writing/domain.md` exemption, or a `.clearfelt-writing/voice-profile.md` preference), say so as its own bullet here too: `<span> kept as-is. Protected: <reason>.` This is what makes the diff explainable in both directions, not just for what moved.
 
 If the resulting score would be misleading on its own (a clean pass driven by a narrow rule dictionary rather than an actually-fixed piece, for example), add that as its own bullet under "What changed, and why." Don't let a good number stand in for a read of the actual text.
 

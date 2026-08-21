@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://clearfelt/schemas/rule-bullet.schema.json",
-  "title": "clearfelt rule bullet",
-  "description": "Documents the shape of a single bullet line under rules/antipatterns/*.md and rules/banned_words/*.md, parsed by scripts/lib/rules.mjs's parseBulletLine(). Rule files stay Markdown, not JSON (see docs/decisions/0002-markdown-only-data-files.md and CLAUDE.md's 'no JSON in user-facing rule or config files' rule); this schema is documentation and a target for scripts/lint.mjs's targeted checks, not a file clearfelt reads or a generic JSON-Schema validator this repo runs (dependency-free, per CLAUDE.md). A bullet line has the literal form: - \"pattern\" | severity: N | tier: N | source: key | regex: true",
+  "$id": "https://clearfelt-writing/schemas/rule-bullet.schema.json",
+  "title": "clearfelt-writing rule bullet",
+  "description": "Documents the shape of a single bullet line under rules/antipatterns/*.md and rules/banned_words/*.md, parsed by scripts/lib/rules.mjs's parseBulletLine(). Rule files stay Markdown, not JSON (see docs/decisions/0002-markdown-only-data-files.md and CLAUDE.md's 'no JSON in user-facing rule or config files' rule); this schema is documentation and a target for scripts/lint.mjs's targeted checks, not a file clearfelt-writing reads or a generic JSON-Schema validator this repo runs (dependency-free, per CLAUDE.md). A bullet line has the literal form: - \"pattern\" | severity: N | tier: N | source: key | regex: true",
   "type": "object",
   "required": ["pattern", "severity", "source"],
   "properties": {
@@ -15,7 +15,7 @@
       "minimum": 1,
       "maximum": 9,
       "default": 5,
-      "description": "How many points a hit costs before category-weight multiplication (see clearfelt.config.md's Category severity weights). Defaults to 5 when the bullet omits it."
+      "description": "How many points a hit costs before category-weight multiplication (see clearfelt-writing.config.md's Category severity weights). Defaults to 5 when the bullet omits it."
     },
     "tier": {
       "type": "integer",

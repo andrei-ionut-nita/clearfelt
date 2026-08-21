@@ -86,7 +86,7 @@ test('an isolated tier-2 word with nothing else nearby is suppressed from the sc
 // files (see templates in rules/*.local.example.md). Exercising the real
 // merge behavior means temporarily writing one of those two real files,
 // same mutate-then-restore discipline as tests/explain.test.mjs's shipped
-// clearfelt.config.md test, under the same shared lock (this mutates real
+// clearfelt-writing.config.md test, under the same shared lock (this mutates real
 // repository state every other test file's detect.mjs subprocess call also
 // reads, so it needs the same cross-file exclusivity).
 test('rules/antipatterns.local.md: a new category is loaded, and overrides an existing pattern by matching text case-insensitively', () => {
@@ -178,7 +178,7 @@ test('parseBulletLine: a non-bullet line (blank, heading, prose) returns null', 
 });
 
 test('parseRuleFile: a bullet with no explicit severity/tier gets the 5/1 defaults; one with explicit values keeps them', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'clearfelt-rules-unit-test-'));
+  const dir = mkdtempSync(join(tmpdir(), 'clearfelt-writing-rules-unit-test-'));
   const filePath = join(dir, 'test_category.md');
   try {
     writeFileSync(filePath, ['- bare pattern with no fields', '- explicit pattern | severity: 9 | tier: 2', ''].join('\n'));
@@ -195,11 +195,11 @@ test('parseRuleFile: a bullet with no explicit severity/tier gets the 5/1 defaul
 });
 
 test('loadRuleDir: a directory that does not exist returns an empty array, not a throw', () => {
-  assert.deepEqual(loadRuleDir(join(tmpdir(), 'clearfelt-rules-dir-does-not-exist')), []);
+  assert.deepEqual(loadRuleDir(join(tmpdir(), 'clearfelt-writing-rules-dir-does-not-exist')), []);
 });
 
 test('mergeLocal: a bullet before any ## heading falls back to the "local" category; explicit severity/tier still win over the 5/1 default', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'clearfelt-rules-unit-test-'));
+  const dir = mkdtempSync(join(tmpdir(), 'clearfelt-writing-rules-unit-test-'));
   const localPath = join(dir, 'local.md');
   try {
     writeFileSync(localPath, ['- no heading above this one', '', '## real_category', '', '- with a heading | severity: 8', ''].join('\n'));

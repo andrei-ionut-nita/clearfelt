@@ -1,6 +1,6 @@
 # Output conventions
 
-Shared rules for how `/clearfelt audit`, `/clearfelt rewrite`, `/clearfelt write`, and `/clearfelt explain` present results. Applies to every response these commands produce, not just a suggestion for long ones. Per-command templates live in `format/audit.md`, `format/rewrite.md`, `format/write.md`, `format/explain.md`.
+Shared rules for how `/clearfelt-writing audit`, `/clearfelt-writing rewrite`, `/clearfelt-writing write`, and `/clearfelt-writing explain` present results. Applies to every response these commands produce, not just a suggestion for long ones. Per-command templates live in `format/audit.md`, `format/rewrite.md`, `format/write.md`, `format/explain.md`.
 
 ## Rules
 
@@ -16,7 +16,7 @@ Shared rules for how `/clearfelt audit`, `/clearfelt rewrite`, `/clearfelt write
 
 ## Verdict line
 
-The first line of any `/clearfelt audit` or `/clearfelt rewrite` response, before the score breakdown, before anything else. Not just the number, a one-word plain-English read on it, so a skimming reader doesn't have to know that 85 is the threshold to know whether this is fine.
+The first line of any `/clearfelt-writing audit` or `/clearfelt-writing rewrite` response, before the score breakdown, before anything else. Not just the number, a one-word plain-English read on it, so a skimming reader doesn't have to know that 85 is the threshold to know whether this is fine.
 
 Bands, checked against `human_score_threshold` (resolved value, default 85):
 
